@@ -21,6 +21,8 @@ export type StyleVibe =
   | 'sporty' 
   | 'cozy';
 
+export type GenderCategory = 'men' | 'women' | 'unisex';
+
 export interface WardrobeItem {
   id: string;
   name: string;
@@ -30,6 +32,7 @@ export interface WardrobeItem {
   color: string;
   colorHex?: string;
   style: StyleVibe;
+  gender?: GenderCategory;
   occasions: OccasionType[];
   season?: 'spring' | 'summer' | 'fall' | 'winter' | 'all-season';
   brand?: string;
@@ -42,6 +45,7 @@ export interface WardrobeItem {
 export interface WardrobeFilterOptions {
   searchQuery: string;
   category: ClothingCategory | 'all';
+  gender?: GenderCategory | 'all';
   color: string | 'all';
   occasion: OccasionType | 'all';
   sortBy: 'recently_added' | 'most_worn' | 'least_worn' | 'name';

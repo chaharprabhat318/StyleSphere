@@ -51,7 +51,10 @@ const DetailModal: React.FC<DetailModalProps> = ({
           <div className="p-6 flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between text-[10px] text-[#0e244d] font-bold uppercase tracking-wider mb-1">
-                <span>{item.category}</span>
+                <span className="flex items-center gap-1.5">
+                  <span>{item.category}</span>
+                  {item.gender && <span className="text-slate-400 font-medium">• {item.gender}</span>}
+                </span>
                 <span>{item.style}</span>
               </div>
 
@@ -59,6 +62,10 @@ const DetailModal: React.FC<DetailModalProps> = ({
               <p className="text-xs text-slate-500 mt-0.5">{item.brand || 'Private Collection'}</p>
 
               <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-500">
+                  <span>Department</span>
+                  <span className="text-slate-800 capitalize font-medium">{item.gender || 'Unisex'}</span>
+                </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Dominant Tone</span>
                   <span className="text-slate-800 flex items-center gap-1.5 font-medium">

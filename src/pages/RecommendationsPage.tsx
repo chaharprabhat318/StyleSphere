@@ -24,6 +24,7 @@ export const RecommendationsPage: React.FC = () => {
   // Criteria State
   const [occasion, setOccasion] = useState<OccasionType>('casual');
   const [style, setStyle] = useState<StyleVibe>('minimal');
+  const [gender, setGender] = useState<'all' | 'men' | 'women'>('all');
   const [weather, setWeather] = useState<'mild' | 'warm' | 'cold'>('mild');
   const [preferredColor, setPreferredColor] = useState<string>('all');
 
@@ -65,6 +66,7 @@ export const RecommendationsPage: React.FC = () => {
     const activeCriteria: RecommendationCriteria = {
       occasion,
       style,
+      gender,
       weather,
       preferredColor: preferredColor !== 'all' ? preferredColor : undefined,
     };
@@ -191,16 +193,39 @@ export const RecommendationsPage: React.FC = () => {
         <>
           {/* Systematic Criteria Filter Panel */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-3">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#0e244d]" />
                 <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   Select Outfit Parameters
                 </h2>
               </div>
-              <span className="text-[11px] text-slate-500">
-                12 Items in Wardrobe Available
-              </span>
+              
+              <div className="flex items-center gap-3">
+                {/* Department switcher */}
+                <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 hidden sm:inline">
+                    Department:
+                  </span>
+                  {(['all', 'men', 'women'] as const).map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setGender(g)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+                        gender === g
+                          ? 'bg-[#0e244d] text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="text-[11px] text-slate-500 hidden md:inline">
+                  {allItems.length} Pieces Available
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -406,6 +431,15 @@ export const RecommendationsPage: React.FC = () => {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 bg-[#0b1329] px-2.5 py-0.5 rounded-full border border-slate-700">
                         {activeOutfit.occasion} • {activeOutfit.style}
                       </span>
+                      {activeOutfit.gender && (
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                          activeOutfit.gender === 'women'
+                            ? 'bg-rose-950/60 text-rose-300 border-rose-800/60'
+                            : 'bg-blue-950/60 text-blue-300 border-blue-800/60'
+                        }`}>
+                          {activeOutfit.gender}
+                        </span>
+                      )}
                       <span className="text-xs text-slate-400">
                         {activeOutfit.items.length} Coordinated Pieces
                       </span>
@@ -438,8 +472,15 @@ export const RecommendationsPage: React.FC = () => {
                           alt={piece.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[9px] font-bold uppercase tracking-wider text-slate-300">
-                          {piece.category}
+                        <div className="absolute top-2 left-2 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[9px] font-bold uppercase tracking-wider text-slate-300">
+                            {piece.category}
+                          </span>
+                          {piece.gender && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-blue-950/80 backdrop-blur-md text-[9px] font-bold uppercase tracking-wider text-blue-300">
+                              {piece.gender}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -604,7 +645,13 @@ export const RecommendationsPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto p-1 scrollbar-thin">
               {allItems
-                .filter((item) => item.category === swappingSlot.category && item.id !== swappingSlot.id)
+                .filter((item) => {
+                  if (item.category !== swappingSlot.category || item.id === swappingSlot.id) return false;
+                  if (gender !== 'all') {
+                    return item.gender === gender || item.gender === 'unisex';
+                  }
+                  return true;
+                })
                 .map((altItem) => (
                   <button
                     key={altItem.id}

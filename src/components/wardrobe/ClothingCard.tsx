@@ -33,9 +33,22 @@ export const ClothingCard: React.FC<ClothingCardProps> = ({
 
         {/* Top Floating Badges */}
         <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none">
-          <span className="text-[9px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-700 border border-slate-200/80 shadow-sm">
-            {item.category}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-700 border border-slate-200/80 shadow-sm">
+              {item.category}
+            </span>
+            {item.gender && (
+              <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm border ${
+                item.gender === 'women'
+                  ? 'bg-rose-50/95 text-rose-700 border-rose-200/80'
+                  : item.gender === 'men'
+                  ? 'bg-blue-50/95 text-blue-800 border-blue-200/80'
+                  : 'bg-slate-100/95 text-slate-700 border-slate-200/80'
+              }`}>
+                {item.gender}
+              </span>
+            )}
+          </div>
 
           {/* Favorite Toggle Button */}
           <button

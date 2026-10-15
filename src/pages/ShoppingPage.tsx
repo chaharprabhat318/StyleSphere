@@ -19,6 +19,7 @@ interface PartnerProduct {
   name: string;
   store: 'Zara' | 'Uniqlo' | 'Myntra' | 'H&M' | 'ASOS';
   category: 'Tops' | 'Bottoms' | 'Outerwear' | 'Footwear';
+  gender?: 'men' | 'women' | 'unisex';
   price: number;
   originalPrice: number;
   currency: string;
@@ -34,10 +35,12 @@ interface PartnerProduct {
 export const ShoppingPage: React.FC = () => {
   const [selectedStore, setSelectedStore] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedGender, setSelectedGender] = useState<'All' | 'Men' | 'Women'>('All');
   const [copiedCoupon, setCopiedCoupon] = useState<boolean>(false);
   const [previewProduct, setPreviewProduct] = useState<PartnerProduct | null>(null);
 
   const promoCode = 'SPHERE10';
+  const genders = ['All', 'Men', 'Women'] as const;
 
   const products: PartnerProduct[] = [
     {
@@ -45,6 +48,7 @@ export const ShoppingPage: React.FC = () => {
       name: 'Structured Linen-Cotton Overshirt',
       store: 'Uniqlo',
       category: 'Outerwear',
+      gender: 'unisex',
       price: 49.9,
       originalPrice: 59.9,
       currency: '$',
@@ -67,6 +71,7 @@ export const ShoppingPage: React.FC = () => {
       name: 'Relaxed Pleated Wide Trousers',
       store: 'Zara',
       category: 'Bottoms',
+      gender: 'men',
       price: 59.9,
       originalPrice: 69.9,
       currency: '$',
@@ -89,6 +94,7 @@ export const ShoppingPage: React.FC = () => {
       name: 'Minimalist Leather Chelsea Boot',
       store: 'H&M',
       category: 'Footwear',
+      gender: 'unisex',
       price: 79.99,
       originalPrice: 94.99,
       currency: '$',
@@ -111,6 +117,7 @@ export const ShoppingPage: React.FC = () => {
       name: 'Retro Clean Suede Court Sneaker',
       store: 'ASOS',
       category: 'Footwear',
+      gender: 'unisex',
       price: 65.0,
       originalPrice: 79.0,
       currency: '$',
@@ -133,6 +140,7 @@ export const ShoppingPage: React.FC = () => {
       name: 'Heavyweight Structured Supima Mock-Neck',
       store: 'Myntra',
       category: 'Tops',
+      gender: 'unisex',
       price: 28.5,
       originalPrice: 38.0,
       currency: '$',
@@ -155,6 +163,7 @@ export const ShoppingPage: React.FC = () => {
       name: 'Tailored Wool-Blend Double-Breasted Blazer',
       store: 'Zara',
       category: 'Outerwear',
+      gender: 'men',
       price: 129.0,
       originalPrice: 159.0,
       currency: '$',
@@ -172,6 +181,75 @@ export const ShoppingPage: React.FC = () => {
         'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=85',
       storeUrl: 'https://www.zara.com/us/en/tailored-wool-blazer?ref=stylesphere&promo=SPHERE10',
     },
+    {
+      id: 'shop-zara-woman-1',
+      name: 'Mulberry Silk Tie-Neck Editorial Blouse',
+      store: 'Zara',
+      category: 'Tops',
+      gender: 'women',
+      price: 89.9,
+      originalPrice: 119.0,
+      currency: '$',
+      reasonWhy:
+        'Fills the sophisticated feminine tailoring gap. Seamlessly coordinates with high-waisted fluid trousers and midi skirts for elevated dinners.',
+      combinationsUnlocked: 6,
+      closetMatches: ['Fluid Slacks', 'Satin Midi Skirt', 'Cashmere Cardigan'],
+      stylingTips: [
+        'Tuck into high-waisted fluid trousers with pointed ankle boots',
+        'Wear bow loosely untied for a relaxed Parisian aesthetic',
+        'Layer underneath an oversized blazer for effortless modern tailoring',
+      ],
+      versatilityScore: 95,
+      imageUrl:
+        'https://images.unsplash.com/photo-1551803091-e20673f15770?auto=format&fit=crop&w=800&q=85',
+      storeUrl: 'https://www.zara.com/us/en/woman-silk-blouse?ref=stylesphere&promo=SPHERE10',
+    },
+    {
+      id: 'shop-hm-woman-1',
+      name: 'High-Waisted Wide Fluid Trousers',
+      store: 'H&M',
+      category: 'Bottoms',
+      gender: 'women',
+      price: 54.99,
+      originalPrice: 69.99,
+      currency: '$',
+      reasonWhy:
+        'Bridges formal workday styling with weekend brunch minimalism, giving your tops and knitwear balanced proportions.',
+      combinationsUnlocked: 7,
+      closetMatches: ['Silk Blouse', 'Fitted Mock-Neck', 'Cropped Trench'],
+      stylingTips: [
+        'Style with a fitted mock-neck knit and minimalist leather belt',
+        'Pair with clean low sneakers and a tucked basic tee for casual days',
+        'Wear with pointed mules or heels for formal appointments',
+      ],
+      versatilityScore: 93,
+      imageUrl:
+        'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=85',
+      storeUrl: 'https://www2.hm.com/en_us/productpage.wide-fluid-trousers.html?ref=stylesphere&promo=SPHERE10',
+    },
+    {
+      id: 'shop-uniqlo-woman-1',
+      name: 'Oversized Double-Face Tailored Blazer',
+      store: 'Uniqlo',
+      category: 'Outerwear',
+      gender: 'women',
+      price: 99.9,
+      originalPrice: 129.0,
+      currency: '$',
+      reasonWhy:
+        'Essential capsule layering piece. Creates instant structure over simple slip skirts, denim, or wide trousers.',
+      combinationsUnlocked: 6,
+      closetMatches: ['Slip Skirt', 'Straight Denim', 'Supima Tee'],
+      stylingTips: [
+        'Drape over shoulders over a knit dress for an architectural silhouette',
+        'Cinch with a leather belt over fluid slacks for power dressing',
+        'Wear casually over straight-leg jeans with sleeves rolled',
+      ],
+      versatilityScore: 94,
+      imageUrl:
+        'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=800&q=85',
+      storeUrl: 'https://www.uniqlo.com/us/en/products/double-face-blazer?ref=stylesphere&promo=SPHERE10',
+    },
   ];
 
   const stores = ['All', 'Zara', 'Uniqlo', 'Myntra', 'H&M', 'ASOS'];
@@ -180,7 +258,11 @@ export const ShoppingPage: React.FC = () => {
   const filteredProducts = products.filter((product) => {
     const matchesStore = selectedStore === 'All' || product.store === selectedStore;
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    return matchesStore && matchesCategory;
+    const matchesGender =
+      selectedGender === 'All' ||
+      product.gender === selectedGender.toLowerCase() ||
+      product.gender === 'unisex';
+    return matchesStore && matchesCategory && matchesGender;
   });
 
   const handleCopyCoupon = () => {
@@ -308,6 +390,28 @@ export const ShoppingPage: React.FC = () => {
 
       {/* Filter and Store Tabs */}
       <div className="space-y-4">
+        {/* Department / Gender Row */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200/70 pb-3">
+          <span className="text-xs font-bold text-slate-500 mr-1">
+            Department:
+          </span>
+          <div className="inline-flex p-1 bg-slate-100 rounded-full border border-slate-200">
+            {genders.map((g) => (
+              <button
+                key={g}
+                onClick={() => setSelectedGender(g)}
+                className={`px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+                  selectedGender === g
+                    ? 'bg-[#0e244d] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Store Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
@@ -319,7 +423,7 @@ export const ShoppingPage: React.FC = () => {
               <button
                 key={store}
                 onClick={() => setSelectedStore(store)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   selectedStore === store
                     ? 'bg-[#0e244d] text-white shadow-sm'
                     : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
@@ -340,7 +444,7 @@ export const ShoppingPage: React.FC = () => {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   selectedCategory === cat
                     ? 'bg-[#0a1124] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -393,11 +497,24 @@ export const ShoppingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Brand & Category */}
+                {/* Brand & Category & Gender */}
                 <div className="flex items-center justify-between text-[11px] mb-1.5">
-                  <span className="uppercase tracking-wider font-bold text-[#132d5e]">
-                    {product.store}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="uppercase tracking-wider font-bold text-[#132d5e]">
+                      {product.store}
+                    </span>
+                    {product.gender && (
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                        product.gender === 'women'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : product.gender === 'men'
+                          ? 'bg-blue-50 text-blue-800 border-blue-200'
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}>
+                        {product.gender}
+                      </span>
+                    )}
+                  </div>
                   <span className="capitalize text-slate-500">{product.category}</span>
                 </div>
 
@@ -525,6 +642,11 @@ export const ShoppingPage: React.FC = () => {
                 <span className="text-[10px] font-bold text-[#132d5e] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                   {previewProduct.store}
                 </span>
+                {previewProduct.gender && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    {previewProduct.gender}
+                  </span>
+                )}
               </div>
               <h3 className="font-editorial text-2xl font-bold text-slate-900">
                 {previewProduct.name}

@@ -15,7 +15,21 @@ class WardrobeService {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
         return INITIAL_WARDROBE;
       }
-      return JSON.parse(stored);
+      const parsed: WardrobeItem[] = JSON.parse(stored);
+      // Seamlessly migrate if items lack gender or new initial pieces were added
+      const needsGenderUpdate = parsed.some((p) => !p.gender);
+      const hasMissingDefaults = INITIAL_WARDROBE.some((init) => !parsed.some((p) => p.id === init.id));
+      if (needsGenderUpdate || hasMissingDefaults) {
+        const merged = INITIAL_WARDROBE.map((init) => {
+          const existing = parsed.find((p) => p.id === init.id);
+          return existing ? { ...init, ...existing, gender: existing.gender || init.gender } : init;
+        });
+        const customItems = parsed.filter((p) => !INITIAL_WARDROBE.some((init) => init.id === p.id));
+        const finalItems = [...merged, ...customItems];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(finalItems));
+        return finalItems;
+      }
+      return parsed;
     } catch (e) {
       console.warn('Failed to parse wardrobe from localStorage, falling back to initial data', e);
       return INITIAL_WARDROBE;
@@ -48,6 +62,13 @@ class WardrobeService {
     let items = this.getStoredItems();
 
     if (filters) {
+      if (filters.gender && filters.gender !== 'all') {
+        if (filters.gender === 'unisex') {
+          items = items.filter((item) => item.gender === 'unisex');
+        } else {
+          items = items.filter((item) => item.gender === filters.gender || item.gender === 'unisex');
+        }
+      }
       if (filters.category && filters.category !== 'all') {
         items = items.filter((item) => item.category === filters.category);
       }

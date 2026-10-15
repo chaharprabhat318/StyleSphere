@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Sparkles, Image as ImageIcon, Check } from 'lucide-react';
-import type { ClothingCategory, OccasionType, StyleVibe, WardrobeItem } from '../../types/wardrobe';
+import type { ClothingCategory, OccasionType, StyleVibe, WardrobeItem, GenderCategory } from '../../types/wardrobe';
 import { wardrobeService } from '../../services/wardrobeService';
 
 interface ItemUploadModalProps {
@@ -17,6 +17,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
   const [color, setColor] = useState('Chalk White');
   const [colorHex, setColorHex] = useState('#F8F9FA');
   const [style, setStyle] = useState<StyleVibe>('minimal');
+  const [gender, setGender] = useState<GenderCategory>('unisex');
   const [occasions, setOccasions] = useState<OccasionType[]>(['casual', 'college']);
   const [season, setSeason] = useState<'spring' | 'summer' | 'fall' | 'winter' | 'all-season'>('all-season');
   const [brand, setBrand] = useState('');
@@ -33,6 +34,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
       setColor('Chalk White');
       setColorHex('#F8F9FA');
       setStyle('minimal');
+      setGender('unisex');
       setOccasions(['casual', 'college']);
       setSeason('all-season');
       setBrand('');
@@ -81,6 +83,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
     setColor('Warm Oatmeal');
     setColorHex('#E6D5B8');
     setStyle('smart casual');
+    setGender('women');
     setOccasions(['college', 'casual', 'date']);
     setSeason('fall');
     setBrand('Loro Piana');
@@ -110,6 +113,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
         color,
         colorHex,
         style,
+        gender,
         occasions,
         season,
         brand: brand.trim() || undefined,
@@ -272,6 +276,32 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Department / Gender */}
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              Department *
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['men', 'women', 'unisex'] as GenderCategory[]).map((g) => {
+                const isSelected = gender === g;
+                return (
+                  <button
+                    type="button"
+                    key={g}
+                    onClick={() => setGender(g)}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#0e244d] text-white border-[#1e3a8a] shadow-xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    {g === 'men' ? 'Men' : g === 'women' ? 'Women' : 'Unisex'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

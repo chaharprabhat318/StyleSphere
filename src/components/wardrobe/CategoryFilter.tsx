@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Filter, RotateCcw } from 'lucide-react';
-import type { ClothingCategory, OccasionType, WardrobeFilterOptions } from '../../types/wardrobe';
+import type { ClothingCategory, OccasionType, WardrobeFilterOptions, GenderCategory } from '../../types/wardrobe';
 
 interface CategoryFilterProps {
   filters: WardrobeFilterOptions;
@@ -33,8 +33,54 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     { id: 'date', label: 'Dinner Date' },
   ];
 
+  const genders: Array<{ id: GenderCategory | 'all'; label: string }> = [
+    { id: 'all', label: 'All Departments' },
+    { id: 'men', label: 'Men' },
+    { id: 'women', label: 'Women' },
+    { id: 'unisex', label: 'Unisex' },
+  ];
+
   return (
     <div className="space-y-4">
+      {/* Department / Gender Tabs */}
+      <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline mr-1">
+            Department:
+          </span>
+          <div className="inline-flex p-1 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
+            {genders.map((g) => {
+              const isActive = (filters.gender || 'all') === g.id;
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => onFilterChange({ gender: g.id })}
+                  className={`px-3.5 py-1 text-xs rounded-full font-medium transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#0e244d] text-white shadow-xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Restore sample demo button if needed */}
+        {onResetWardrobe && (
+          <button
+            onClick={onResetWardrobe}
+            title="Reset to sample wardrobe"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs text-slate-600 hover:text-[#0e244d] hover:bg-slate-100 transition-colors border border-slate-200/90 bg-white shadow-xs cursor-pointer whitespace-nowrap"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-[#0e244d]" />
+            <span className="hidden sm:inline font-medium">Reset Collection</span>
+          </button>
+        )}
+      </div>
+
       {/* Category Pills Bar */}
       <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none">
         <div className="flex items-center gap-2">
@@ -63,18 +109,6 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
             );
           })}
         </div>
-
-        {/* Restore sample demo button if needed */}
-        {onResetWardrobe && (
-          <button
-            onClick={onResetWardrobe}
-            title="Reset to sample wardrobe"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs text-slate-600 hover:text-[#0e244d] hover:bg-slate-100 transition-colors border border-slate-200/90 bg-white shadow-xs cursor-pointer whitespace-nowrap"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-[#0e244d]" />
-            <span className="hidden sm:inline font-medium">Reset Collection</span>
-          </button>
-        )}
       </div>
 
       {/* Secondary Search & Dropdown Filter Row */}

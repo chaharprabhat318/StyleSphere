@@ -19,6 +19,7 @@ interface GarmentTarget {
   name: string;
   store: string;
   category: string;
+  gender?: 'men' | 'women' | 'unisex';
   price: string;
   imageUrl: string;
   linkUrl: string;
@@ -27,6 +28,7 @@ interface GarmentTarget {
 export const TryOnPage: React.FC = () => {
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [sourceType, setSourceType] = useState<'link' | 'wardrobe' | 'upload'>('link');
+  const [tryOnGender, setTryOnGender] = useState<'all' | 'men' | 'women'>('all');
   const [inputUrl, setInputUrl] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
 
@@ -35,8 +37,9 @@ export const TryOnPage: React.FC = () => {
     {
       id: 'demo-1',
       name: 'Structured Gabardine Workwear Shacket',
-      store: 'Zara',
+      store: 'Zara Men',
       category: 'Outerwear',
+      gender: 'men',
       price: '$69.90',
       imageUrl:
         'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=85',
@@ -47,6 +50,7 @@ export const TryOnPage: React.FC = () => {
       name: 'Heavyweight Supima Cotton Mock-Neck',
       store: 'Myntra',
       category: 'Tops',
+      gender: 'unisex',
       price: '$28.50',
       imageUrl:
         'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=85',
@@ -57,6 +61,7 @@ export const TryOnPage: React.FC = () => {
       name: 'Heritage Raw Selvedge Trucker Jacket',
       store: 'Uniqlo',
       category: 'Outerwear',
+      gender: 'men',
       price: '$59.90',
       imageUrl:
         'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=85',
@@ -65,12 +70,35 @@ export const TryOnPage: React.FC = () => {
     {
       id: 'demo-4',
       name: 'Double-Breasted Wool Atelier Blazer',
-      store: 'H&M',
+      store: 'H&M Men',
       category: 'Outerwear',
+      gender: 'men',
       price: '$129.00',
       imageUrl:
         'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=85',
       linkUrl: 'https://www2.hm.com/en_us/productpage.wool-blazer.html',
+    },
+    {
+      id: 'demo-5',
+      name: 'Mulberry Silk Fluid Tie-Neck Blouse',
+      store: 'Zara Woman',
+      category: 'Tops',
+      gender: 'women',
+      price: '$89.90',
+      imageUrl:
+        'https://images.unsplash.com/photo-1551803091-e20673f15770?auto=format&fit=crop&w=800&q=85',
+      linkUrl: 'https://www.zara.com/us/en/silk-blouse-p048123.html',
+    },
+    {
+      id: 'demo-6',
+      name: 'Tailored Hourglass Fluid Slacks',
+      store: 'Mango Woman',
+      category: 'Bottoms',
+      gender: 'women',
+      price: '$79.99',
+      imageUrl:
+        'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=85',
+      linkUrl: 'https://shop.mango.com/us/fluid-trousers-p10492.html',
     },
   ];
 
@@ -84,12 +112,24 @@ export const TryOnPage: React.FC = () => {
   // Studio fallback photo
   const studioModels = [
     {
-      name: 'Studio Portrait A',
+      name: 'Studio Woman (A)',
+      gender: 'women',
       url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=85',
     },
     {
-      name: 'Studio Portrait B',
+      name: 'Studio Man (B)',
+      gender: 'men',
       url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=85',
+    },
+    {
+      name: 'Studio Woman (C)',
+      gender: 'women',
+      url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=85',
+    },
+    {
+      name: 'Studio Man (D)',
+      gender: 'men',
+      url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=85',
     },
   ];
   const [activeStudioModel, setActiveStudioModel] = useState(studioModels[0].url);
@@ -312,25 +352,52 @@ export const TryOnPage: React.FC = () => {
         </div>
 
         {/* Quick Demo Links for Instant 1-Click Testing */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] text-slate-400 mr-1">Quick Demo Presets:</span>
-          {demoGarments.map((garment) => (
-            <button
-              key={garment.id}
-              onClick={() => {
-                setInputUrl(garment.linkUrl);
-                handleExtractFromUrl(garment.linkUrl);
-              }}
-              className={`px-3 py-1 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                activeGarment.id === garment.id
-                  ? 'bg-[#132d5e] text-white border border-[#1e3a8a]'
-                  : 'bg-[#0b1329] text-slate-300 border border-slate-800 hover:border-slate-700'
-              }`}
-            >
-              <Store className="w-3 h-3 text-blue-300" />
-              <span>{garment.store} • {garment.name.split(' ')[0]} {garment.name.split(' ')[1]}</span>
-            </button>
-          ))}
+        <div className="space-y-2 pt-1 border-t border-slate-800/80">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-400">Quick Demo Presets:</span>
+            <div className="inline-flex p-0.5 bg-[#0b1329] rounded-xl border border-slate-800 text-[10px]">
+              {(['all', 'men', 'women'] as const).map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setTryOnGender(g)}
+                  className={`px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    tryOnGender === g
+                      ? 'bg-[#0e244d] text-white border border-[#1e3a8a]'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {demoGarments
+              .filter((g) => tryOnGender === 'all' || g.gender === tryOnGender || g.gender === 'unisex')
+              .map((garment) => (
+                <button
+                  key={garment.id}
+                  onClick={() => {
+                    setInputUrl(garment.linkUrl);
+                    handleExtractFromUrl(garment.linkUrl);
+                  }}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeGarment.id === garment.id
+                      ? 'bg-[#132d5e] text-white border border-[#1e3a8a]'
+                      : 'bg-[#0b1329] text-slate-300 border border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <Store className="w-3 h-3 text-blue-300" />
+                  <span>{garment.store} • {garment.name.split(' ')[0]} {garment.name.split(' ')[1]}</span>
+                  {garment.gender && (
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-black/60 text-blue-300 font-bold border border-slate-700">
+                      {garment.gender}
+                    </span>
+                  )}
+                </button>
+              ))}
+          </div>
         </div>
       </div>
 
@@ -369,6 +436,25 @@ export const TryOnPage: React.FC = () => {
                 <span>Studio Portrait</span>
               </button>
             </div>
+
+            {/* Studio Model Switcher if in studio mode */}
+            {cameraMode === 'studio' && (
+              <div className="flex items-center gap-1 bg-[#0b1329] p-1 rounded-2xl border border-slate-800 overflow-x-auto">
+                {studioModels.map((m) => (
+                  <button
+                    key={m.name}
+                    onClick={() => setActiveStudioModel(m.url)}
+                    className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      activeStudioModel === m.url
+                        ? 'bg-[#0e244d] text-white border border-[#1e3a8a]'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Overlay Mesh Guide Toggle */}
             <button
@@ -636,7 +722,9 @@ export const TryOnPage: React.FC = () => {
                   Select any preset store item or paste your own URL above:
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {demoGarments.map((garment) => (
+                  {demoGarments
+                    .filter((g) => tryOnGender === 'all' || g.gender === tryOnGender || g.gender === 'unisex')
+                    .map((garment) => (
                     <button
                       key={garment.id}
                       onClick={() => {
@@ -675,7 +763,9 @@ export const TryOnPage: React.FC = () => {
                   Select a piece you already own to preview fit:
                 </p>
                 <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1 scrollbar-thin">
-                  {wardrobeItems.map((item) => (
+                  {wardrobeItems
+                    .filter((item) => tryOnGender === 'all' || item.gender === tryOnGender || item.gender === 'unisex')
+                    .map((item) => (
                     <button
                       key={item.id}
                       onClick={() => {

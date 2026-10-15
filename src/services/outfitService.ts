@@ -191,11 +191,22 @@ class OutfitService {
   async generateRecommendations(criteria: RecommendationCriteria): Promise<OutfitRecommendation[]> {
     const allItems = await wardrobeService.getItems();
 
-    const tops = allItems.filter(i => i.category === 'tops');
-    const bottoms = allItems.filter(i => i.category === 'bottoms');
-    const outerwears = allItems.filter(i => i.category === 'outerwear');
-    const footwears = allItems.filter(i => i.category === 'footwear');
-    const accessories = allItems.filter(i => i.category === 'accessories');
+    const genderFilter = (item: WardrobeItem) => {
+      if (!criteria.gender || criteria.gender === 'all') return true;
+      return item.gender === criteria.gender || item.gender === 'unisex';
+    };
+    const scopedItems = allItems.filter(genderFilter);
+
+    // If scoped items have both tops and bottoms, use them; otherwise fallback gracefully
+    const pool = (scopedItems.filter(i => i.category === 'tops').length > 0 && scopedItems.filter(i => i.category === 'bottoms').length > 0)
+      ? scopedItems
+      : allItems;
+
+    const tops = pool.filter(i => i.category === 'tops');
+    const bottoms = pool.filter(i => i.category === 'bottoms');
+    const outerwears = pool.filter(i => i.category === 'outerwear');
+    const footwears = pool.filter(i => i.category === 'footwear');
+    const accessories = pool.filter(i => i.category === 'accessories');
 
     if (tops.length === 0 || bottoms.length === 0) return [];
 
@@ -295,6 +306,7 @@ class OutfitService {
         title: outfitTitle(criteria.occasion, criteria.style, idx + 1),
         occasion: criteria.occasion,
         style: criteria.style,
+        gender: criteria.gender && criteria.gender !== 'all' ? criteria.gender : undefined,
         items,
         compatibilityScore: combo.score,
         reasoning: buildReasoning(combo.top, combo.bottom, shoes, outer, criteria.occasion),
