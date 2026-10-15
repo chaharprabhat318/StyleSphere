@@ -28,8 +28,8 @@ export const AppLayout: React.FC = () => {
         };
       case '/recommendations':
         return {
-          title: 'AI Outfit Studio',
-          subtitle: 'Rule-powered and AI-driven personalized outfit matching',
+          title: 'Outfit Generator',
+          subtitle: 'Generate harmonized outfit combinations tailored to your occasion, weather, and style',
         };
       case '/try-on':
         return {
@@ -50,7 +50,7 @@ export const AppLayout: React.FC = () => {
       default:
         return {
           title: 'Dashboard',
-          subtitle: 'Welcome to your AI Personal Lifestyle Assistant',
+          subtitle: 'Systematic overview of your wardrobe intelligence, daily look, and style stats',
         };
     }
   };

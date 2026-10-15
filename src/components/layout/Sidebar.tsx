@@ -15,8 +15,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ totalItemsCount = 12 }) => {
   const navItems = [
-    { label: 'Studio Editorial', to: '/dashboard', icon: Compass },
-    { label: 'Lookbook & AI', to: '/recommendations', icon: Sparkles, badge: 'Curator' },
+    { label: 'Dashboard', to: '/dashboard', icon: Compass },
+    { label: 'Outfit Generator', to: '/recommendations', icon: Sparkles, badge: 'AI' },
     { label: 'My Wardrobe', to: '/wardrobe', icon: Layers, count: totalItemsCount },
     { label: 'Virtual Try-On', to: '/try-on', icon: Eye, isAccent: true },
     { label: 'Smart Shopping', to: '/shopping', icon: ShoppingBag, badge: 'Curated' },

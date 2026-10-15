@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, SunMedium } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -22,14 +22,6 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onOpenUpload })
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Weather / Occasion Vibe Pill */}
-        <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#060e22] border border-slate-800 text-xs text-slate-300 font-sans-clean">
-          <SunMedium className="w-3.5 h-3.5 text-blue-300" />
-          <span className="font-semibold text-white">Autumn Season</span>
-          <span className="text-slate-600">•</span>
-          <span className="text-slate-300">19°C Mild</span>
-        </div>
-
         {/* Primary Catalog Trigger */}
         {onOpenUpload && (
           <button
