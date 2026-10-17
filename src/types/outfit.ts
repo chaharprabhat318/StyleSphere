@@ -1,10 +1,11 @@
-import type { OccasionType, StyleVibe, WardrobeItem, GenderCategory } from './wardrobe';
+import type { OccasionType, StyleVibe, WardrobeItem, GenderCategory, FashionArchetype } from './wardrobe';
 
 export interface OutfitRecommendation {
   id: string;
   title: string;
   occasion: OccasionType;
   style: StyleVibe;
+  archetype?: FashionArchetype;
   gender?: GenderCategory;
   items: WardrobeItem[];
   reasoning: string;
@@ -19,6 +20,7 @@ export interface OutfitRecommendation {
 export interface RecommendationCriteria {
   occasion: OccasionType;
   style: StyleVibe;
+  archetype?: FashionArchetype;
   gender?: 'men' | 'women' | 'all';
   weather?: 'warm' | 'mild' | 'cold' | 'rainy';
   preferredColor?: string;

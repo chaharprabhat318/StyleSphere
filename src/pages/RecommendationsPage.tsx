@@ -12,8 +12,9 @@ import {
   SunMedium,
   Snowflake,
   Sun,
+  ChevronDown,
 } from 'lucide-react';
-import type { OccasionType, StyleVibe, WardrobeItem } from '../types/wardrobe';
+import type { OccasionType, StyleVibe, WardrobeItem, FashionArchetype } from '../types/wardrobe';
 import type { OutfitRecommendation, RecommendationCriteria } from '../types/outfit';
 import { outfitService } from '../services/outfitService';
 import { wardrobeService } from '../services/wardrobeService';
@@ -24,6 +25,7 @@ export const RecommendationsPage: React.FC = () => {
   // Criteria State
   const [occasion, setOccasion] = useState<OccasionType>('casual');
   const [style, setStyle] = useState<StyleVibe>('minimal');
+  const [archetype, setArchetype] = useState<FashionArchetype>('old money');
   const [gender, setGender] = useState<'all' | 'men' | 'women'>('all');
   const [weather, setWeather] = useState<'mild' | 'warm' | 'cold'>('mild');
   const [preferredColor, setPreferredColor] = useState<string>('all');
@@ -66,6 +68,7 @@ export const RecommendationsPage: React.FC = () => {
     const activeCriteria: RecommendationCriteria = {
       occasion,
       style,
+      archetype,
       gender,
       weather,
       preferredColor: preferredColor !== 'all' ? preferredColor : undefined,
@@ -124,6 +127,19 @@ export const RecommendationsPage: React.FC = () => {
     { id: 'streetwear', label: 'Streetwear' },
     { id: 'classic', label: 'Classic' },
     { id: 'cozy', label: 'Cozy' },
+  ];
+
+  const archetypesList: Array<{ id: FashionArchetype; label: string; desc: string }> = [
+    { id: 'old money', label: 'Old Money', desc: 'Quiet luxury, tailored cashmere, timeless heritage' },
+    { id: 'streetwear', label: 'Streetwear', desc: 'Oversized silhouettes, drop sneakers, urban edge' },
+    { id: 'minimalist', label: 'Minimalist', desc: 'Clean lines, monochromatic neutrals, effortless essentials' },
+    { id: 'Y2K', label: 'Y2K', desc: 'Futuristic early 2000s, bold playful cuts, metallic vibes' },
+    { id: 'dark academia', label: 'Dark Academia', desc: 'Tweed, oxford knits, collegiate scholar aesthetic' },
+    { id: 'clean fit', label: 'Clean Fit', desc: 'Sharp tailoring, boxy tees, crisp modern proportions' },
+    { id: 'techwear', label: 'Techwear', desc: 'Utilitarian fabrics, tactical accents, futuristic stealth' },
+    { id: 'boho', label: 'Boho', desc: 'Free-spirited drape, artisanal textures, relaxed bohemian charm' },
+    { id: 'vintage', label: 'Vintage', desc: 'Nostalgic classics, retro silhouettes, thrifted authenticity' },
+    { id: 'luxe', label: 'Luxe', desc: 'High-glamour satin, rich fabrics, commanding evening presence' },
   ];
 
   const weatherOptions: Array<{ id: 'warm' | 'mild' | 'cold'; label: string; icon: React.FC<{ className?: string }> }> = [
@@ -228,11 +244,82 @@ export const RecommendationsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Dropdown Lists Bar: Occasion, Style Aesthetic & Archetypes */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-xs">
+              {/* Dropdown 1: Occasion */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Occasion Dropdown
+                </label>
+                <div className="relative">
+                  <select
+                    value={occasion}
+                    onChange={(e) => setOccasion(e.target.value as OccasionType)}
+                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 pr-8 focus:outline-none focus:border-[#0e244d] cursor-pointer shadow-xs"
+                  >
+                    {occasionsList.map((occ) => (
+                      <option key={occ.id} value={occ.id}>
+                        {occ.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Dropdown 2: Style Aesthetic */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Style Aesthetic Dropdown
+                </label>
+                <div className="relative">
+                  <select
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value as StyleVibe)}
+                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 pr-8 focus:outline-none focus:border-[#0e244d] cursor-pointer shadow-xs"
+                  >
+                    {stylesList.map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Dropdown 3: Archetypes (old money, streetwear, minimalist, Y2K, dark academia, clean fit, techwear, boho, vintage, luxe) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#0e244d] block">
+                    Archetypes Dropdown
+                  </label>
+                  <span className="text-[9px] font-bold bg-[#0e244d] text-white px-1.5 py-0.2 rounded-md">
+                    10 Styles
+                  </span>
+                </div>
+                <div className="relative">
+                  <select
+                    value={archetype}
+                    onChange={(e) => setArchetype(e.target.value as FashionArchetype)}
+                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-white border-2 border-[#132d5e] text-xs font-bold text-[#0e244d] pr-8 focus:outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer shadow-xs"
+                  >
+                    {archetypesList.map((arch) => (
+                      <option key={arch.id} value={arch.id}>
+                        {arch.label} ({arch.id})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#0e244d] absolute right-3 top-3 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* 1. Occasion */}
               <div className="space-y-2">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                  Occasion
+                  1. Occasion
                 </label>
                 <div className="flex flex-col gap-1.5">
                   {occasionsList.map((occ) => (
@@ -251,10 +338,10 @@ export const RecommendationsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2. Style Vibe */}
+              {/* 2. Style Aesthetic */}
               <div className="space-y-2">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                  Style Aesthetic
+                  2. Style Aesthetic
                 </label>
                 <div className="flex flex-col gap-1.5">
                   {stylesList.map((st) => (
@@ -273,46 +360,82 @@ export const RecommendationsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 3. Layering / Climate Condition */}
+              {/* 3. Archetypes List (10 Fashion Archetypes) */}
               <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                  Layering Condition
-                </label>
-                <div className="flex flex-col gap-1.5">
-                  {weatherOptions.map((w) => {
-                    const Icon = w.icon;
-                    return (
-                      <button
-                        key={w.id}
-                        onClick={() => setWeather(w.id)}
-                        className={`px-3 py-2 rounded-xl text-xs font-semibold text-left flex items-center gap-2 transition-all ${
-                          weather === w.id
-                            ? 'bg-[#0e244d] text-white shadow-xs'
-                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5 shrink-0" />
-                        <span>{w.label}</span>
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#0e244d] block">
+                    3. Archetypes
+                  </label>
+                  <span className="text-[10px] font-semibold text-slate-400 capitalize">
+                    {archetype}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
+                  {archetypesList.map((arch) => (
+                    <button
+                      key={arch.id}
+                      onClick={() => setArchetype(arch.id)}
+                      className={`px-3 py-2 rounded-xl text-left transition-all ${
+                        archetype === arch.id
+                          ? 'bg-[#0e244d] text-white shadow-xs'
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold">{arch.label}</span>
+                        {archetype === arch.id && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-300" />
+                        )}
+                      </div>
+                      <p className={`text-[10px] mt-0.5 line-clamp-1 ${
+                        archetype === arch.id ? 'text-blue-200' : 'text-slate-400'
+                      }`}>
+                        {arch.desc}
+                      </p>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* 4. Color Palette & Primary Action Button */}
-              <div className="space-y-2 flex flex-col justify-between">
+              {/* 4. Layering Condition, Color Palette & Generate */}
+              <div className="space-y-4 flex flex-col justify-between">
                 <div>
                   <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                    Preferred Color Anchor
+                    4. Layering Condition
                   </label>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-col gap-1.5">
+                    {weatherOptions.map((w) => {
+                      const Icon = w.icon;
+                      return (
+                        <button
+                          key={w.id}
+                          onClick={() => setWeather(w.id)}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold text-left flex items-center gap-2 transition-all ${
+                            weather === w.id
+                              ? 'bg-[#0e244d] text-white shadow-xs'
+                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5 shrink-0" />
+                          <span>{w.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                    Color Anchor
+                  </label>
+                  <div className="flex flex-wrap gap-1">
                     {colorPalettes.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => setPreferredColor(c.id)}
-                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
                           preferredColor === c.id
-                            ? 'bg-[#0e244d] text-white'
+                            ? 'bg-[#0e244d] text-white font-bold'
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                       >
@@ -322,7 +445,7 @@ export const RecommendationsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
+                <div className="pt-2 border-t border-slate-100">
                   <button
                     onClick={handleGenerateOutfits}
                     disabled={isGenerating}
@@ -427,10 +550,16 @@ export const RecommendationsPage: React.FC = () => {
                 {/* Outfit Title & Harmony Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 bg-[#0b1329] px-2.5 py-0.5 rounded-full border border-slate-700">
                         {activeOutfit.occasion} • {activeOutfit.style}
                       </span>
+                      {activeOutfit.archetype && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-700/60 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          <span>Archetype: {activeOutfit.archetype}</span>
+                        </span>
+                      )}
                       {activeOutfit.gender && (
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                           activeOutfit.gender === 'women'
@@ -577,9 +706,16 @@ export const RecommendationsPage: React.FC = () => {
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#0e244d] bg-blue-50 px-2.5 py-0.5 rounded-full">
-                        {outfit.occasion} • {outfit.style}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#0e244d] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                          {outfit.occasion} • {outfit.style}
+                        </span>
+                        {outfit.archetype && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                            {outfit.archetype}
+                          </span>
+                        )}
+                      </div>
                       <h4 className="font-editorial text-xl font-bold text-slate-900 mt-1">
                         {outfit.title}
                       </h4>

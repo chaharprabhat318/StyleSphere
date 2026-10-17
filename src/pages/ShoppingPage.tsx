@@ -55,7 +55,7 @@ export const ShoppingPage: React.FC = () => {
       reasonWhy:
         'Your closet has 3 base neutral tees but lacks a breathable mid-layer. This olive piece creates 5 distinct silhouettes with your white tee, raw denim, and grey trousers.',
       combinationsUnlocked: 5,
-      closetMatches: ['White Supima Tee', 'Raw Indigo Jeans', 'Pleated Chinos'],
+      closetMatches: ['Cropped Boxy Tee', 'Baggy Puddle Denim', 'Wide Fluid Slacks'],
       stylingTips: [
         'Wear unbuttoned over a white tee with raw denim for a relaxed weekend look',
         'Button up and pair with tailored chinos for a casual workday silhouette',
@@ -360,9 +360,9 @@ export const ShoppingPage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">
               Gap 02 • Silhouette
             </span>
-            <h3 className="text-sm font-bold text-white">Relaxed Drape Trousers</h3>
+            <h3 className="text-sm font-bold text-white">Ecru Fluid Trousers</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              70% of your bottoms are slim dark denim. An ecru pleated trouser opens up modern tailoring.
+              Your bottoms anchor in baggy puddle denim and cargo silhouettes. An ecru fluid trouser unlocks elevated tailoring.
             </p>
           </div>
 

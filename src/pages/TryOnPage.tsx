@@ -36,73 +36,73 @@ export const TryOnPage: React.FC = () => {
   const [inputUrl, setInputUrl] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
 
-  // Demo clothing presets inspired by Anywear
+  // Demo clothing presets inspired by contemporary 2025/2026 streetwear & clean fits
   const demoGarments: GarmentTarget[] = [
     {
       id: 'demo-1',
-      name: 'Structured Gabardine Workwear Shacket',
-      store: 'Zara Men',
-      category: 'Outerwear',
-      gender: 'men',
-      price: '$69.90',
+      name: '300GSM Heavyweight Washed Cropped Boxy Tee',
+      store: 'Represent',
+      category: 'Tops',
+      gender: 'unisex',
+      price: '$55.00',
       imageUrl:
-        'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=85',
-      linkUrl: 'https://www.zara.com/us/en/gabardine-overshirt-p012849.html',
+        'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=85',
+      linkUrl: 'https://www.representclo.com/products/cropped-boxy-tee',
     },
     {
       id: 'demo-2',
-      name: 'Heavyweight Supima Cotton Mock-Neck',
-      store: 'Myntra',
-      category: 'Tops',
+      name: 'Ultra-Wide Baggy Puddle Hem Denim',
+      store: 'Our Legacy',
+      category: 'Bottoms',
       gender: 'unisex',
-      price: '$28.50',
+      price: '$110.00',
       imageUrl:
-        'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=85',
-      linkUrl: 'https://www.myntra.com/tshirts/supima-cotton-mock-neck',
+        'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=85',
+      linkUrl: 'https://www.ourlegacy.com/third-cut-denim',
     },
     {
       id: 'demo-3',
-      name: 'Heritage Raw Selvedge Trucker Jacket',
-      store: 'Uniqlo',
+      name: 'Cropped Washed Canvas Worker Jacket',
+      store: 'Stüssy',
       category: 'Outerwear',
       gender: 'men',
-      price: '$59.90',
+      price: '$145.00',
       imageUrl:
         'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=85',
-      linkUrl: 'https://www.uniqlo.com/us/en/products/selvedge-trucker-jacket',
+      linkUrl: 'https://www.stussy.com/products/canvas-worker-jacket',
     },
     {
       id: 'demo-4',
-      name: 'Double-Breasted Wool Atelier Blazer',
-      store: 'H&M Men',
-      category: 'Outerwear',
-      gender: 'men',
-      price: '$129.00',
+      name: '90s Ribbed Slim-Fit Baby Tee',
+      store: 'Courrèges',
+      category: 'Tops',
+      gender: 'women',
+      price: '$45.00',
       imageUrl:
-        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=85',
-      linkUrl: 'https://www2.hm.com/en_us/productpage.wool-blazer.html',
+        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=85',
+      linkUrl: 'https://www.courreges.com/products/ribbed-baby-tee',
     },
     {
       id: 'demo-5',
-      name: 'Mulberry Silk Fluid Tie-Neck Blouse',
-      store: 'Zara Woman',
-      category: 'Tops',
-      gender: 'women',
-      price: '$89.90',
+      name: 'Double-Pleated Wide-Leg Fluid Trousers',
+      store: 'Studio Nicholson',
+      category: 'Bottoms',
+      gender: 'men',
+      price: '$120.00',
       imageUrl:
-        'https://images.unsplash.com/photo-1551803091-e20673f15770?auto=format&fit=crop&w=800&q=85',
-      linkUrl: 'https://www.zara.com/us/en/silk-blouse-p048123.html',
+        'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=85',
+      linkUrl: 'https://www.studionicholson.com/products/wide-leg-trousers',
     },
     {
       id: 'demo-6',
-      name: 'Tailored Hourglass Fluid Slacks',
-      store: 'Mango Woman',
+      name: 'High-Waist Fluid Tailored Wide Slacks',
+      store: 'The Row',
       category: 'Bottoms',
       gender: 'women',
-      price: '$79.99',
+      price: '$95.00',
       imageUrl:
         'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=85',
-      linkUrl: 'https://shop.mango.com/us/fluid-trousers-p10492.html',
+      linkUrl: 'https://www.therow.com/products/fluid-wide-slacks',
     },
   ];
 
@@ -110,6 +110,7 @@ export const TryOnPage: React.FC = () => {
 
   // Model & Webcam State
   const [cameraActive, setCameraActive] = useState<boolean>(false);
+  const [isStartingCamera, setIsStartingCamera] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraMode, setCameraMode] = useState<'webcam' | 'studio'>('webcam');
 
@@ -170,28 +171,105 @@ export const TryOnPage: React.FC = () => {
     load();
   }, []);
 
-  // Handle Webcam Start / Stop
+  // Callback ref guarantees video node attaches stream immediately upon DOM mounting
+  const setVideoElement = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      if (node.srcObject !== streamRef.current) {
+        node.srcObject = streamRef.current;
+      }
+      node.play().catch((err) => {
+        console.warn('Video play error:', err);
+      });
+    }
+  }, []);
+
+  // Handle Webcam Start / Stop with 3-tier fallback & HTTPS context detection
   const startCamera = useCallback(async () => {
     setCameraError(null);
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        setCameraActive(true);
-      } else {
-        setCameraError('Webcam API is not supported on this browser.');
-        setCameraActive(false);
-      }
-    } catch {
-      setCameraError('Camera access was denied or is unavailable. Switched to Studio Mode.');
+    setIsStartingCamera(true);
+
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '[::1]';
+
+    if (!window.isSecureContext && !isLocalhost) {
+      setCameraError(
+        'Camera access requires a secure HTTPS connection. Please ensure your website is accessed over https:// (e.g. on Vercel/Netlify).'
+      );
       setCameraActive(false);
-      setCameraMode('studio');
+      setIsStartingCamera(false);
+      return;
+    }
+
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setCameraError(
+        'Webcam is not supported or blocked by browser security. Please open using Chrome, Edge, or Safari.'
+      );
+      setCameraActive(false);
+      setIsStartingCamera(false);
+      return;
+    }
+
+    try {
+      let stream: MediaStream;
+      try {
+        // Tier 1: Front camera with ideal HD
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      } catch {
+        try {
+          // Tier 2: Front camera without strict resolution
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: false,
+          });
+        } catch {
+          // Tier 3: Any available video device (best mobile fallback)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+        }
+      }
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        try {
+          await videoRef.current.play();
+        } catch (e) {
+          console.warn('Video autoplay warning:', e);
+        }
+      }
+      setCameraActive(true);
+      setCameraError(null);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error('Camera access error:', error);
+      if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
+        setCameraError(
+          'Camera access was denied. Please allow camera permissions in your browser address bar and click "Allow / Retry Camera".'
+        );
+      } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
+        setCameraError('No camera found on this device. You can switch to Studio Portrait mode.');
+      } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
+        setCameraError(
+          'Camera is in use by another app (e.g. Zoom or another browser tab). Please close it and retry.'
+        );
+      } else {
+        setCameraError(error?.message || 'Unable to access camera on this device.');
+      }
+      setCameraActive(false);
+    } finally {
+      setIsStartingCamera(false);
     }
   }, []);
 
@@ -727,28 +805,61 @@ export const TryOnPage: React.FC = () => {
           <div className="relative w-full max-w-sm aspect-[3/4] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
             {/* 1. Live Video Stream for Webcam Mode */}
             {cameraMode === 'webcam' ? (
-              cameraActive ? (
+              <>
                 <video
-                  ref={videoRef}
+                  ref={setVideoElement}
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover scale-x-[-1]"
+                  className={`w-full h-full object-cover scale-x-[-1] ${
+                    cameraActive ? 'block' : 'hidden'
+                  }`}
                 />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#0a1124]">
-                  <CameraOff className="w-10 h-10 text-slate-500" />
-                  <p className="text-xs text-slate-400">
-                    {cameraError || 'Requesting camera permissions...'}
-                  </p>
-                  <button
-                    onClick={startCamera}
-                    className="px-4 py-2 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold"
-                  >
-                    Allow Camera Access
-                  </button>
-                </div>
-              )
+                {!cameraActive && (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#0a1124]">
+                    {isStartingCamera ? (
+                      <>
+                        <div className="w-12 h-12 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-white tracking-wide">
+                            Accessing Camera...
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            Please allow camera permissions if prompted by your browser.
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400">
+                          <CameraOff className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <div className="space-y-1 max-w-xs">
+                          <h4 className="text-xs font-bold text-white">Live Camera Inactive</h4>
+                          <p className="text-[11px] text-slate-400 leading-relaxed">
+                            {cameraError || 'Camera permissions are required for live virtual try-on.'}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 w-full max-w-[210px] pt-1">
+                          <button
+                            onClick={startCamera}
+                            className="w-full py-2.5 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border border-[#1e3a8a]"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Allow / Retry Camera</span>
+                          </button>
+                          <button
+                            onClick={() => setCameraMode('studio')}
+                            className="w-full py-2 rounded-xl bg-[#0b1329] hover:bg-slate-800 text-slate-300 text-xs font-semibold transition-all border border-slate-800 cursor-pointer"
+                          >
+                            Use Studio Portrait Instead
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
               /* 2. Studio Model / Uploaded Image */
               <img

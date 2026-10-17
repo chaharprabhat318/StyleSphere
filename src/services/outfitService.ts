@@ -1,9 +1,9 @@
-import type { WardrobeItem, OccasionType, StyleVibe } from '../types/wardrobe';
+import type { WardrobeItem, OccasionType, StyleVibe, FashionArchetype } from '../types/wardrobe';
 import type { OutfitRecommendation, RecommendationCriteria } from '../types/outfit';
 import { wardrobeService } from './wardrobeService';
 
-const OUTFIT_HISTORY_KEY = 'stylesphere_outfit_history_v2';
-const SAVED_OUTFITS_KEY = 'stylesphere_saved_outfits_v1';
+const OUTFIT_HISTORY_KEY = 'stylesphere_outfit_history_trending_v4';
+const SAVED_OUTFITS_KEY = 'stylesphere_saved_outfits_trending_v4';
 
 export interface HistoryEntry {
   id: string;
@@ -39,23 +39,118 @@ const COLOR_COMPAT: Record<string, string[]> = {
 
 function normalizeColor(color: string): string {
   return color.toLowerCase()
-    .replace('light ', '').replace('dark ', '').replace('off-', '')
-    .replace('navy blue', 'navy').replace('raw indigo', 'navy')
-    .replace('muted taupe', 'beige').replace('tortoiseshell', 'brown')
-    .replace('vintage charcoal', 'charcoal').replace('indigo', 'navy')
+    .replace('vintage ', '')
+    .replace('washed ', '')
+    .replace('chalk ', '')
+    .replace('cream ', '')
+    .replace('muted ', '')
+    .replace('dune ', '')
+    .replace('raw ', '')
+    .replace('deep ', '')
+    .replace('matte ', '')
+    .replace('melange ', '')
+    .replace('champagne ', '')
+    .replace('caramel ', '')
+    .replace('stone ', '')
+    .replace('sand', 'beige')
+    .replace('oatmeal', 'beige')
+    .replace('ecru', 'white')
+    .replace('bone', 'white')
+    .replace('ash', 'grey')
+    .replace('charcoal', 'grey')
+    .replace('slate', 'grey')
+    .replace('indigo', 'navy')
+    .replace('mid wash', 'blue')
+    .replace('obsidian', 'black')
+    .replace('tortoise', 'brown')
+    .replace('silver & white', 'white')
+    .replace('white & black', 'white')
     .trim();
 }
 
 function colorScore(c1: string, c2: string): number {
   const n1 = normalizeColor(c1);
   const n2 = normalizeColor(c2);
-  if (n1 === n2) return 60; // Same color, not ideal but ok
+  if (n1 === n2) return 70; // Monochromatic look
   const compatList = COLOR_COMPAT[n1] || [];
   if (compatList.includes(n2)) return 100;
-  // Check reverse
   const compatList2 = COLOR_COMPAT[n2] || [];
   if (compatList2.includes(n1)) return 100;
-  return 40; // Unknown / less compatible
+  return 55;
+}
+
+// ─── Modern 2025/2026 Trend Silhouette & Proportion Engine ───────────
+// Core Trend Rule: "Tight/Cropped/Slim Top + Baggy/Wide-Leg/Bootcut Bottom"
+function silhouetteScore(top: WardrobeItem, bottom: WardrobeItem): number {
+  const topText = `${top.name} ${top.subCategory || ''}`.toLowerCase();
+  const bottomText = `${bottom.name} ${bottom.subCategory || ''}`.toLowerCase();
+
+  const isCroppedOrSlimTop =
+    top.fit === 'cropped' ||
+    top.fit === 'slim' ||
+    top.fit === 'boxy' ||
+    topText.includes('cropped') ||
+    topText.includes('baby tee') ||
+    topText.includes('slim') ||
+    topText.includes('boxy');
+
+  const isWideOrBaggyBottom =
+    bottom.fit === 'baggy' ||
+    bottom.fit === 'wide-leg' ||
+    bottom.fit === 'bootcut' ||
+    bottom.fit === 'loose' ||
+    bottomText.includes('baggy') ||
+    bottomText.includes('wide') ||
+    bottomText.includes('bootcut') ||
+    bottomText.includes('carpenter') ||
+    bottomText.includes('cargo') ||
+    bottomText.includes('parachute') ||
+    bottomText.includes('loose');
+
+  // Hard penalty for skinny jeans (User directive: "no to skinny jeans")
+  if (bottomText.includes('skinny')) {
+    return 20;
+  }
+
+  // Peak Trend Synergy: Cropped/Slim/Boxy Top + Baggy/Wide/Bootcut Bottoms
+  if (isCroppedOrSlimTop && isWideOrBaggyBottom) {
+    return 100;
+  }
+
+  // Cropped top + Straight-leg bottoms (small yes to straight fit)
+  if (isCroppedOrSlimTop && (bottom.fit === 'straight' || bottomText.includes('straight'))) {
+    return 88;
+  }
+
+  // Relaxed top + Wide-leg drape
+  if (isWideOrBaggyBottom) {
+    return 92;
+  }
+
+  return 75;
+}
+
+// ─── Viral "Sandwich Rule" Evaluator ─────────────────────────────────
+// Bread (Top/Jacket/Hat) + Filling (Contrasting Baggy Pants) + Bread (Matching Shoes)
+function sandwichScore(top: WardrobeItem, bottom: WardrobeItem, shoes: WardrobeItem | undefined): number {
+  if (!shoes) return 75;
+  const topColor = normalizeColor(top.color);
+  const shoeColor = normalizeColor(shoes.color);
+  const bottomColor = normalizeColor(bottom.color);
+
+  // Shoes tone-match or complement top, while bottoms provide contrast
+  if ((topColor === shoeColor || colorScore(top.color, shoes.color) >= 80) && topColor !== bottomColor) {
+    return 100; // Perfect Sandwich Rule symmetry
+  }
+
+  return 75;
+}
+
+// ─── Archetype Synergy Evaluator ─────────────────────────────────────
+function archetypeSynergy(item: WardrobeItem, requestedArchetype?: FashionArchetype): number {
+  if (!requestedArchetype) return 80;
+  if (item.archetype === requestedArchetype) return 100;
+  return 70;
 }
 
 // ─── Style Compatibility ─────────────────────────────────────────────
@@ -70,10 +165,10 @@ const STYLE_COMPAT: Record<StyleVibe, StyleVibe[]> = {
 
 function styleScore(s1: StyleVibe, s2: StyleVibe): number {
   const compat = STYLE_COMPAT[s1] || [];
-  return compat.includes(s2) ? 100 : 60;
+  return compat.includes(s2) ? 100 : 65;
 }
 
-// ─── Score a full outfit combination ─────────────────────────────────
+// ─── Score a full outfit combination with Trend Rules ────────────────
 function scoreOutfit(
   top: WardrobeItem,
   bottom: WardrobeItem,
@@ -81,42 +176,48 @@ function scoreOutfit(
   outer: WardrobeItem | undefined,
   criteria: RecommendationCriteria,
 ): number {
-  let score = 0;
-  let factors = 0;
+  let weightedScore = 0;
+  let totalWeight = 0;
 
-  // Color: top + bottom
-  score += colorScore(top.color, bottom.color);
-  factors++;
+  // 1. Color Harmony (Top + Bottom)
+  weightedScore += colorScore(top.color, bottom.color) * 1.2;
+  totalWeight += 1.2;
 
-  // Color: shoes + one of top/bottom
+  // 2. Silhouette Proportions (Cropped/Slim Top + Baggy/Wide-Leg/Bootcut Bottom)
+  const silScore = silhouetteScore(top, bottom);
+  weightedScore += silScore * 1.5;
+  totalWeight += 1.5;
+
+  // 3. Sandwich Rule (Top & Shoes balance vs Bottoms)
   if (shoes) {
-    score += colorScore(shoes.color, bottom.color) * 0.6;
-    score += colorScore(shoes.color, top.color) * 0.4;
-    factors++;
+    const swScore = sandwichScore(top, bottom, shoes);
+    weightedScore += swScore * 1.0;
+    totalWeight += 1.0;
   }
 
-  // Color: outer + inner
+  // 4. Style Vibe Coherence
+  weightedScore += styleScore(top.style, bottom.style) * 0.8;
+  totalWeight += 0.8;
+
+  // 5. Archetype Coherence (if requested)
+  if (criteria.archetype) {
+    const archTop = archetypeSynergy(top, criteria.archetype);
+    const archBottom = archetypeSynergy(bottom, criteria.archetype);
+    weightedScore += ((archTop + archBottom) / 2) * 1.3;
+    totalWeight += 1.3;
+  }
+
+  // 6. Occasion Match Bonus
+  if (top.occasions.includes(criteria.occasion)) weightedScore += 12;
+  if (bottom.occasions.includes(criteria.occasion)) weightedScore += 12;
+
+  // 7. Outerwear layering harmony
   if (outer) {
-    score += colorScore(outer.color, top.color) * 0.7;
-    score += colorScore(outer.color, bottom.color) * 0.3;
-    factors++;
+    weightedScore += colorScore(outer.color, top.color) * 0.7;
+    totalWeight += 0.7;
   }
 
-  // Style coherence top + bottom
-  score += styleScore(top.style, bottom.style);
-  factors++;
-
-  // Occasion match bonus
-  const topMatchesOcc = top.occasions.includes(criteria.occasion) ? 20 : 0;
-  const bottomMatchesOcc = bottom.occasions.includes(criteria.occasion) ? 20 : 0;
-  score += topMatchesOcc + bottomMatchesOcc;
-
-  // Style match bonus
-  const topMatchesStyle = top.style === criteria.style ? 20 : 0;
-  const bottomMatchesStyle = bottom.style === criteria.style ? 20 : 0;
-  score += topMatchesStyle + bottomMatchesStyle;
-
-  return Math.min(99, Math.round(score / factors));
+  return Math.min(99, Math.max(86, Math.round(weightedScore / totalWeight)));
 }
 
 // ─── Generate human-readable reasoning ────────────────────────────────
@@ -126,45 +227,73 @@ function buildReasoning(
   shoes: WardrobeItem | undefined,
   outer: WardrobeItem | undefined,
   occasion: OccasionType,
+  archetype?: FashionArchetype,
 ): string {
-  const cs = colorScore(top.color, bottom.color);
-  const colorRelation = cs >= 100 ? 'a perfectly complementary' : cs >= 70 ? 'a harmonious' : 'a contrasting';
+  const silScore = silhouetteScore(top, bottom);
+  const isTrendSilhouette = silScore >= 95;
+  const isSandwich = shoes ? sandwichScore(top, bottom, shoes) === 100 : false;
 
-  let text = `This outfit builds around ${colorRelation} color pairing — your ${top.color} ${top.subCategory || top.name} with ${bottom.color} ${bottom.subCategory || bottom.name}.`;
+  let text = '';
 
-  if (outer) {
-    text += ` The ${outer.name} adds a layered dimension that works well for ${occasion === 'college' ? 'transitioning between classes' : occasion === 'date' ? 'the evening chill' : 'layered versatility'}.`;
+  if (isTrendSilhouette) {
+    text += `Engineered with the 2025/2026 contemporary golden proportion: a structured ${top.subCategory || 'cropped top'} balanced against high-volume ${bottom.subCategory || 'wide-leg bottoms'}.`;
+  } else {
+    text += `Harmoniously proportioned pairing your ${top.color} ${top.name} with ${bottom.color} ${bottom.name}.`;
+  }
+
+  if (isSandwich && shoes) {
+    text += ` Styled using the Sandwich Rule — your ${top.color} upper mirrors your ${shoes.color} footwear, framing the ${bottom.color} bottoms as the clean focal contrast.`;
+  }
+
+  if (archetype) {
+    const archetypeMap: Record<FashionArchetype, string> = {
+      'old money': ' Curated under the Old Money aesthetic with understated quiet luxury poise, tailored pleats, and timeless heritage drape.',
+      'streetwear': ' Infused with modern Streetwear energy, stacking heavy oversized denim puddle breaks over retro runners.',
+      'minimalist': ' Crafted through a pure Minimalist lens — intentional boxy cuts, crisp neutral tones, and architectural restraint.',
+      'Y2K': ' Channeling Y2K aesthetics with a nostalgic baby tee cut, flared bootcut lines, and cyber-mesh accents.',
+      'dark academia': ' Structured with Dark Academia mood, pairing collegiate double-pleated wool with rich charcoal and lug derbies.',
+      'clean fit': ' Masterclass in the Clean Fit aesthetic — zero graphic clutter, razor-sharp proportions, and effortless modern drape.',
+      'techwear': ' Framed with Techwear utility, pairing weather-resistant modular cargo drape with sleek stealth lines.',
+      'boho': ' Flowing with relaxed Bohemian movement, loose airy textures, and natural tonal harmony.',
+      'vintage': ' Rooted in mid-century Vintage authenticity with washed faded textures and classic stacked denim breaks.',
+      'luxe': ' Engineered with high-end Luxe sophistication, delivering commanding evening polish and sculptural tailoring.',
+    };
+    text += archetypeMap[archetype] || ` Curated specifically for the ${archetype} aesthetic.`;
   }
 
   if (shoes) {
-    text += ` Grounded with the ${shoes.name}, the silhouette stays ${shoes.style === 'minimal' ? 'clean and unfussy' : shoes.style === 'streetwear' ? 'street-ready' : 'elevated'}.`;
+    text += ` The ${shoes.name} anchors the silhouette, letting the wide leg hem puddle naturally over the footwear.`;
+  }
+
+  if (outer) {
+    text += ` Layered with the ${outer.name} to add an architectural third-piece dimension.`;
   }
 
   const occasionMap: Partial<Record<OccasionType, string>> = {
-    college: 'comfortable enough for long campus days while still looking put-together',
-    casual: 'relaxed and easy to wear all day without overthinking',
-    date: 'polished without trying too hard — effortlessly stylish',
-    party: 'eye-catching and energetic for a social night out',
-    formal: 'sharp and professional with a clean, structured feel',
-    sporty: 'functional and athletic with a sporty edge',
+    college: 'campus rotation and study sessions',
+    casual: 'relaxed everyday city wear',
+    date: 'an effortlessly polished date night',
+    party: 'social nightlife and evening events',
+    formal: 'elevated contemporary formal wear',
+    sporty: 'active street-ready utility',
   };
+  text += ` Ideal for ${occasionMap[occasion] || occasion}.`;
 
-  text += ` Overall this works for ${occasion} — it's ${occasionMap[occasion] || 'well-balanced for the occasion'}.`;
   return text;
 }
 
 function buildStylingTip(top: WardrobeItem, bottom: WardrobeItem, outer: WardrobeItem | undefined): string {
   const tips = [
-    `Half-tuck the ${top.subCategory || 'top'} at the front of your ${bottom.subCategory || 'bottoms'} to create shape without looking stiff.`,
-    `Roll the cuffs of your ${bottom.subCategory || 'bottoms'} once to draw attention to your shoes and add a casual, intentional touch.`,
-    outer ? `Wear the ${outer.subCategory || 'layer'} open and relaxed — let it drape naturally over your shoulders when indoors.` : `Push up your sleeves slightly to keep things from looking too formal.`,
-    `Keep accessories minimal with this combination — a single wrist piece or clean bag is all you need.`,
-    `This palette works well with either a matte or subtle shine bag — avoid loud prints in accessories to let the outfit breathe.`,
+    `Let the ${bottom.subCategory || 'wide bottoms'} puddle and stack naturally over your sneakers for that effortless contemporary break.`,
+    `Keep the ${top.subCategory || 'cropped top'} untucked — modern styling favors the 1:2 torso-to-leg golden ratio.`,
+    `Notice the Sandwich Rule: match your sunglasses or bag tone to your shoes to frame the contrasting trousers.`,
+    outer ? `Wear the ${outer.subCategory || 'outerwear'} unbuttoned to create strong vertical lines against your wide-leg silhouette.` : `Add a minimal silver box chain to draw focus upwards towards your neckline.`,
+    `Because the pants have generous volume, avoid bulky belts to keep the waistline seamless and clean.`,
   ];
   return tips[Math.floor(Math.random() * tips.length)];
 }
 
-function outfitTitle(occasion: OccasionType, style: StyleVibe, variant: number): string {
+function outfitTitle(occasion: OccasionType, style: StyleVibe, variant: number, archetype?: FashionArchetype): string {
   const variantLabel = variant === 1 ? '' : variant === 2 ? ' (Alt)' : ' (Remix)';
   const occasionLabel: Record<OccasionType, string> = {
     college: 'Campus',
@@ -182,7 +311,20 @@ function outfitTitle(occasion: OccasionType, style: StyleVibe, variant: number):
     sporty: 'Sport',
     cozy: 'Cozy',
   };
-  return `${occasionLabel[occasion] ?? occasion} ${styleLabel[style] ?? style} Look${variantLabel}`;
+  const archetypeLabel: Partial<Record<FashionArchetype, string>> = {
+    'old money': 'Old Money',
+    streetwear: 'Streetwear',
+    minimalist: 'Minimalist',
+    Y2K: 'Y2K',
+    'dark academia': 'Dark Academia',
+    'clean fit': 'Clean Fit',
+    techwear: 'Techwear',
+    boho: 'Boho',
+    vintage: 'Vintage',
+    luxe: 'Luxe',
+  };
+  const archetypePrefix = archetype && archetypeLabel[archetype] ? `${archetypeLabel[archetype]} ` : '';
+  return `${archetypePrefix}${occasionLabel[occasion] ?? occasion} ${styleLabel[style] ?? style} Look${variantLabel}`;
 }
 
 // ─── Main Recommendation Engine ─────────────────────────────────────
@@ -303,13 +445,14 @@ class OutfitService {
 
       return {
         id: `rec-${Date.now()}-${idx}`,
-        title: outfitTitle(criteria.occasion, criteria.style, idx + 1),
+        title: outfitTitle(criteria.occasion, criteria.style, idx + 1, criteria.archetype),
         occasion: criteria.occasion,
         style: criteria.style,
+        archetype: criteria.archetype,
         gender: criteria.gender && criteria.gender !== 'all' ? criteria.gender : undefined,
         items,
         compatibilityScore: combo.score,
-        reasoning: buildReasoning(combo.top, combo.bottom, shoes, outer, criteria.occasion),
+        reasoning: buildReasoning(combo.top, combo.bottom, shoes, outer, criteria.occasion, criteria.archetype),
         stylingTip: buildStylingTip(combo.top, combo.bottom, outer),
         createdAt: new Date().toISOString(),
       };

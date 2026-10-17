@@ -1,7 +1,15 @@
 import type { WardrobeItem, WardrobeFilterOptions } from '../types/wardrobe';
 import { INITIAL_WARDROBE } from '../data/mockWardrobe';
 
-const STORAGE_KEY = 'stylesphere_wardrobe_items_v1';
+const LEGACY_STORAGE_KEYS = [
+  'stylesphere_wardrobe_items_v1',
+  'stylesphere_wardrobe_items_v2',
+  'stylesphere_wardrobe_items_v3',
+  'stylesphere_wardrobe_items_v3_trending',
+  'stylesphere_wardrobe_items',
+];
+
+const STORAGE_KEY = 'stylesphere_wardrobe_trending_2026_v4';
 
 // Base API configuration for Member 3's FastAPI backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -9,26 +17,39 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 class WardrobeService {
   private getStoredItems(): WardrobeItem[] {
     try {
+      // Actively purge older version keys from user browser cache
+      LEGACY_STORAGE_KEYS.forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {}
+      });
+
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) {
-        // Initialize with default high-quality wardrobe
         localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
         return INITIAL_WARDROBE;
       }
+
       const parsed: WardrobeItem[] = JSON.parse(stored);
-      // Seamlessly migrate if items lack gender or new initial pieces were added
-      const needsGenderUpdate = parsed.some((p) => !p.gender);
-      const hasMissingDefaults = INITIAL_WARDROBE.some((init) => !parsed.some((p) => p.id === init.id));
-      if (needsGenderUpdate || hasMissingDefaults) {
-        const merged = INITIAL_WARDROBE.map((init) => {
-          const existing = parsed.find((p) => p.id === init.id);
-          return existing ? { ...init, ...existing, gender: existing.gender || init.gender } : init;
-        });
-        const customItems = parsed.filter((p) => !INITIAL_WARDROBE.some((init) => init.id === p.id));
-        const finalItems = [...merged, ...customItems];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(finalItems));
-        return finalItems;
+
+      // Verify stored items are indeed the new trending pieces (not old selvedge/biker jacket data)
+      const hasOldLegacyItems = parsed.some(
+        (p) =>
+          p.id === 'item-1' ||
+          p.id === 'item-2' ||
+          p.id === 'item-3' ||
+          p.name.includes('Selvedge Denim') ||
+          p.name.includes('Straight-Leg Selvedge') ||
+          p.name.includes('Supima Tee')
+      );
+
+      const hasNewTrendingItems = parsed.some((p) => p.id === 'item-top-1');
+
+      if (hasOldLegacyItems || !hasNewTrendingItems) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
+        return INITIAL_WARDROBE;
       }
+
       return parsed;
     } catch (e) {
       console.warn('Failed to parse wardrobe from localStorage, falling back to initial data', e);

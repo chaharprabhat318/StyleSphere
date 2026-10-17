@@ -21,6 +21,18 @@ export type StyleVibe =
   | 'sporty' 
   | 'cozy';
 
+export type FashionArchetype =
+  | 'old money'
+  | 'streetwear'
+  | 'minimalist'
+  | 'Y2K'
+  | 'dark academia'
+  | 'clean fit'
+  | 'techwear'
+  | 'boho'
+  | 'vintage'
+  | 'luxe';
+
 export type GenderCategory = 'men' | 'women' | 'unisex';
 
 export interface WardrobeItem {
@@ -32,6 +44,8 @@ export interface WardrobeItem {
   color: string;
   colorHex?: string;
   style: StyleVibe;
+  archetype?: FashionArchetype;
+  fit?: 'loose' | 'wide-leg' | 'baggy' | 'bootcut' | 'straight' | 'cropped' | 'slim' | 'boxy' | 'relaxed' | 'chunky' | 'sleek';
   gender?: GenderCategory;
   occasions: OccasionType[];
   season?: 'spring' | 'summer' | 'fall' | 'winter' | 'all-season';

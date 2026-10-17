@@ -28,39 +28,39 @@ export const DashboardPage: React.FC = () => {
   const outerCount = items.filter((i) => i.category === 'outerwear').length;
   const shoesCount = items.filter((i) => i.category === 'footwear').length;
 
-  // Trending Outfit Presets
+  // Trending Outfit Presets (2025/2026 Golden Proportion: Cropped/Slim Top + Baggy/Wide Bottom)
   const trendingOutfits = [
     {
       id: 'trend-1',
-      title: 'Downtown Casual Minimal',
-      occasion: 'Campus & Coffee',
-      harmony: 98,
+      title: 'Boxy Cropped Streetwear Ensemble',
+      occasion: 'Campus & Street',
+      harmony: 99,
       pieces: [
-        items.find((i) => i.id === 'item-1') || items[0],
-        items.find((i) => i.id === 'item-2') || items[1],
-        items.find((i) => i.id === 'item-4') || items[3],
+        items.find((i) => i.id === 'item-top-1') || items.find((i) => i.category === 'tops') || items[0],
+        items.find((i) => i.id === 'item-bot-1') || items.find((i) => i.category === 'bottoms') || items[1],
+        items.find((i) => i.id === 'item-foot-1') || items.find((i) => i.category === 'footwear') || items[2],
       ].filter(Boolean) as WardrobeItem[],
     },
     {
       id: 'trend-2',
-      title: 'Smart Layered Tailoring',
-      occasion: 'Work & Presentation',
-      harmony: 95,
+      title: 'Modern Clean Fit Golden Proportion',
+      occasion: 'Downtown & Coffee',
+      harmony: 96,
       pieces: [
-        items.find((i) => i.id === 'item-5') || items[2],
-        items.find((i) => i.id === 'item-1') || items[0],
-        items.find((i) => i.id === 'item-3') || items[1],
+        items.find((i) => i.id === 'item-top-3') || items.find((i) => i.category === 'tops') || items[0],
+        items.find((i) => i.id === 'item-bot-2') || items.find((i) => i.category === 'bottoms') || items[1],
+        items.find((i) => i.id === 'item-foot-2') || items.find((i) => i.category === 'footwear') || items[2],
       ].filter(Boolean) as WardrobeItem[],
     },
     {
       id: 'trend-3',
-      title: 'Evening Monochrome Silhouette',
-      occasion: 'Dinner & Social',
-      harmony: 92,
+      title: 'Old Money Tailored Silhouette',
+      occasion: 'Dinner & Date',
+      harmony: 94,
       pieces: [
-        items.find((i) => i.id === 'item-6') || items[0],
-        items.find((i) => i.id === 'item-2') || items[1],
-        items.find((i) => i.id === 'item-4') || items[3],
+        items.find((i) => i.id === 'item-top-4') || items.find((i) => i.category === 'tops') || items[0],
+        items.find((i) => i.id === 'item-bot-4') || items.find((i) => i.category === 'bottoms') || items[1],
+        items.find((i) => i.id === 'item-foot-3') || items.find((i) => i.category === 'footwear') || items[2],
       ].filter(Boolean) as WardrobeItem[],
     },
   ];

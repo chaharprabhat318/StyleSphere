@@ -77,17 +77,17 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
 
   // Aesthetic Preset Auto-Fill for instantaneous demo
   const handleSimulatedAutoTag = () => {
-    setName('Structured Cashmere Knit Crewneck');
+    setName('300GSM Heavyweight Boxy Cropped Tee');
     setCategory('tops');
-    setSubCategory('Cashmere Knit');
-    setColor('Warm Oatmeal');
-    setColorHex('#E6D5B8');
-    setStyle('smart casual');
-    setGender('women');
-    setOccasions(['college', 'casual', 'date']);
-    setSeason('fall');
-    setBrand('Loro Piana');
-    setImageUrl('https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=85');
+    setSubCategory('Boxy Cropped Tee');
+    setColor('Vintage Black');
+    setColorHex('#18181B');
+    setStyle('streetwear');
+    setGender('unisex');
+    setOccasions(['college', 'casual', 'party']);
+    setSeason('all-season');
+    brand && setBrand('Represent Clo');
+    setImageUrl('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=85');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

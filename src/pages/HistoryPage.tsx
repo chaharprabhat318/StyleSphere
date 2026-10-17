@@ -38,7 +38,7 @@ export const HistoryPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200/80">
         <div>
           <span className="text-[10px] uppercase tracking-widest font-bold text-white bg-[#0e244d] px-2.5 py-1 rounded-full border border-[#1e3a8a]">
-            Journal des Tenues
+            Outfit Log & Rotation
           </span>
           <h1 className="font-editorial text-3xl md:text-4xl text-slate-900 font-bold mt-2">
             Wear Rotation & History

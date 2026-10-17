@@ -7,7 +7,7 @@ import { wardrobeService } from '../../services/wardrobeService';
 
 export const AppLayout: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [totalCount, setTotalCount] = useState(12);
+  const [totalCount, setTotalCount] = useState(26);
   const location = useLocation();
 
   const fetchCount = async () => {

@@ -50,7 +50,7 @@ export const RoomMakeoverPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-widest font-bold text-white bg-[#0e244d] px-2.5 py-1 rounded-full border border-[#1e3a8a]">
-              Studio Intérieur • Phase 2
+              Interior Studio • Phase 2
             </span>
             <span className="text-[10px] font-bold text-[#132d5e] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
               <Clock className="w-3 h-3 text-[#132d5e]" />
