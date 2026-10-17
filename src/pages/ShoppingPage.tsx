@@ -390,10 +390,10 @@ export const ShoppingPage: React.FC = () => {
 
       {/* Filter and Store Tabs */}
       <div className="space-y-4">
-        {/* Department / Gender Row */}
+        {/* Gender / Category Row */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200/70 pb-3">
           <span className="text-xs font-bold text-slate-500 mr-1">
-            Department:
+            Category:
           </span>
           <div className="inline-flex p-1 bg-slate-100 rounded-full border border-slate-200">
             {genders.map((g) => (
@@ -434,11 +434,11 @@ export const ShoppingPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Category Tabs */}
+          {/* Clothing Type Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1">
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              Category:
+              Clothing Type:
             </span>
             {categories.map((cat) => (
               <button

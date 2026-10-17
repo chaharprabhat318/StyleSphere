@@ -34,7 +34,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   ];
 
   const genders: Array<{ id: GenderCategory | 'all'; label: string }> = [
-    { id: 'all', label: 'All Departments' },
+    { id: 'all', label: 'All Categories' },
     { id: 'men', label: 'Men' },
     { id: 'women', label: 'Women' },
     { id: 'unisex', label: 'Unisex' },
@@ -42,11 +42,11 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Department / Gender Tabs */}
+      {/* Category / Gender Tabs */}
       <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline mr-1">
-            Department:
+            Category:
           </span>
           <div className="inline-flex p-1 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
             {genders.map((g) => {

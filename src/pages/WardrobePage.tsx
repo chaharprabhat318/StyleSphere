@@ -63,7 +63,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
 
               <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-500">
-                  <span>Department</span>
+                  <span>Category</span>
                   <span className="text-slate-800 capitalize font-medium">{item.gender || 'Unisex'}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">

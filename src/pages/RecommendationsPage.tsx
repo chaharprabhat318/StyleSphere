@@ -202,10 +202,10 @@ export const RecommendationsPage: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                {/* Department switcher */}
+                {/* Category switcher */}
                 <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 hidden sm:inline">
-                    Department:
+                    Category:
                   </span>
                   {(['all', 'men', 'women'] as const).map((g) => (
                     <button

@@ -243,11 +243,11 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Category & Style */}
+          {/* Clothing Type & Style */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Category *
+                Clothing Type *
               </label>
               <select
                 value={category}
@@ -279,10 +279,10 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Department / Gender */}
+          {/* Category / Gender */}
           <div>
             <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-              Department *
+              Category *
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(['men', 'women', 'unisex'] as GenderCategory[]).map((g) => {

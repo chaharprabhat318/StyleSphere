@@ -10,6 +10,9 @@ import {
   Sliders,
   Store,
   Upload,
+  Shirt,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import type { WardrobeItem } from '../types/wardrobe';
 import { wardrobeService } from '../services/wardrobeService';
@@ -27,8 +30,9 @@ interface GarmentTarget {
 
 export const TryOnPage: React.FC = () => {
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
-  const [sourceType, setSourceType] = useState<'link' | 'wardrobe' | 'upload'>('link');
+  const [sourceType, setSourceType] = useState<'wardrobe' | 'suggested' | 'link'>('wardrobe');
   const [tryOnGender, setTryOnGender] = useState<'all' | 'men' | 'women'>('all');
+  const [wardrobeCategory, setWardrobeCategory] = useState<string>('all');
   const [inputUrl, setInputUrl] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
 
@@ -150,6 +154,18 @@ export const TryOnPage: React.FC = () => {
     const load = async () => {
       const items = await wardrobeService.getItems();
       setWardrobeItems(items);
+      if (items.length > 0) {
+        setActiveGarment({
+          id: items[0].id,
+          name: items[0].name,
+          store: items[0].brand || 'My Wardrobe',
+          category: items[0].category,
+          gender: items[0].gender,
+          price: 'In Your Closet',
+          imageUrl: items[0].imageUrl,
+          linkUrl: '',
+        });
+      }
     };
     load();
   }, []);
@@ -306,99 +322,335 @@ export const TryOnPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Garment Link Extractor Bar (Anywear Feature Highlight) */}
-      <div className="p-6 rounded-3xl bg-[#060a14] border border-slate-800 text-white shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* Interactive Garment Selection Hub */}
+      <div className="p-6 rounded-3xl bg-[#060a14] border border-slate-800 text-white shadow-xl space-y-5">
+        {/* Source Mode Header & Tabs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-blue-300" />
-            <span className="text-xs font-bold tracking-wide uppercase text-slate-300">
-              Anywear Product Link Try-On
-            </span>
+            <Sparkles className="w-4 h-4 text-blue-300" />
+            <h2 className="text-xs font-bold tracking-wide uppercase text-slate-200">
+              Select Garment To Try On
+            </h2>
           </div>
-          <span className="text-[11px] text-slate-400">
-            Supports Zara, Myntra, Uniqlo, H&M, Amazon Fashion & ASOS
-          </span>
+
+          {/* 3 Main Mode Selectors */}
+          <div className="inline-flex p-1 bg-[#0b1329] rounded-2xl border border-slate-700/80 text-xs">
+            <button
+              onClick={() => setSourceType('wardrobe')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                sourceType === 'wardrobe'
+                  ? 'bg-[#0e244d] text-white border border-[#1e3a8a] shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Shirt className="w-3.5 h-3.5 text-blue-300" />
+              <span>From Your Wardrobe</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-900/40 text-blue-300 font-semibold">
+                {wardrobeItems.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setSourceType('suggested')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                sourceType === 'suggested'
+                  ? 'bg-[#0e244d] text-white border border-[#1e3a8a] shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Store className="w-3.5 h-3.5 text-blue-300" />
+              <span>Suggested Clothes</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-900/40 text-blue-300 font-semibold">
+                {demoGarments.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setSourceType('link')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                sourceType === 'link'
+                  ? 'bg-[#0e244d] text-white border border-[#1e3a8a] shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Link2 className="w-3.5 h-3.5 text-blue-300" />
+              <span>Link / Upload</span>
+            </button>
+          </div>
         </div>
 
-        {/* Input Bar */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={inputUrl}
-              onChange={(e) => setInputUrl(e.target.value)}
-              placeholder="Paste any cloth link (e.g. https://www.zara.com/us/en/textured-overshirt-p012...)"
-              className="w-full px-4 py-3 rounded-2xl bg-[#0b1329] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
-            />
-          </div>
+        {/* ─── Mode 1: From Your Wardrobe ───────────────────────── */}
+        {sourceType === 'wardrobe' && (
+          <div className="space-y-4">
+            {/* Filter Bar: Piece Type & Category */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              {/* Piece Type Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {[
+                  { id: 'all', label: 'All Pieces' },
+                  { id: 'tops', label: 'Tops' },
+                  { id: 'bottoms', label: 'Bottoms' },
+                  { id: 'outerwear', label: 'Outerwear' },
+                  { id: 'footwear', label: 'Footwear' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setWardrobeCategory(c.id)}
+                    className={`px-3 py-1 rounded-xl font-semibold transition-all cursor-pointer ${
+                      wardrobeCategory === c.id
+                        ? 'bg-[#132d5e] text-white border border-[#1e3a8a]'
+                        : 'bg-[#0b1329] text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
 
-          <button
-            onClick={() => handleExtractFromUrl()}
-            disabled={isExtracting}
-            className="px-6 py-3 rounded-2xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold font-sans-clean flex items-center justify-center gap-2 transition-colors border border-[#1e3a8a] shrink-0 disabled:opacity-50"
-          >
-            {isExtracting ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-300" />
-                <span>Extracting Garment...</span>
-              </>
+              {/* Category (Gender) Pills */}
+              <div className="flex items-center gap-1.5 bg-[#0b1329] p-1 rounded-xl border border-slate-800 text-[10px]">
+                <span className="text-slate-500 font-bold uppercase px-1.5 hidden sm:inline">
+                  Category:
+                </span>
+                {(['all', 'men', 'women'] as const).map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setTryOnGender(g)}
+                    className={`px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      tryOnGender === g
+                        ? 'bg-[#0e244d] text-white border border-[#1e3a8a]'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Wardrobe Items Grid */}
+            {wardrobeItems.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-80 overflow-y-auto p-1 scrollbar-thin">
+                {wardrobeItems
+                  .filter((item) => {
+                    const catMatch = wardrobeCategory === 'all' || item.category === wardrobeCategory;
+                    const genderMatch =
+                      tryOnGender === 'all' || item.gender === tryOnGender || item.gender === 'unisex';
+                    return catMatch && genderMatch;
+                  })
+                  .map((item) => {
+                    const isSelected = activeGarment.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveGarment({
+                            id: item.id,
+                            name: item.name,
+                            store: item.brand || 'My Wardrobe',
+                            category: item.category,
+                            gender: item.gender,
+                            price: 'In Your Closet',
+                            imageUrl: item.imageUrl,
+                            linkUrl: '',
+                          });
+                          triggerDrapeScan();
+                        }}
+                        className={`p-2.5 rounded-2xl border text-left transition-all group relative cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-[#132d5e] border-[#3b82f6] shadow-md ring-1 ring-blue-400/80'
+                            : 'bg-[#0b1329] border-slate-800 hover:border-slate-700 hover:bg-[#0e1a38]'
+                        }`}
+                      >
+                        <div className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-950 relative mb-2">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-sm text-slate-300">
+                            {item.category}
+                          </span>
+                          {isSelected && (
+                            <span className="absolute top-1.5 right-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500 text-white shadow-xs flex items-center gap-0.5">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                              <span>Fitted</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-blue-300 block truncate">
+                            {item.brand || 'Wardrobe Staple'}
+                          </span>
+                          <h4 className="text-xs font-bold text-white truncate mt-0.5">
+                            {item.name}
+                          </h4>
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                            <span className="capitalize">{item.color}</span>
+                            {item.gender && (
+                              <span className="uppercase text-[9px] px-1 py-0.2 rounded bg-black/60 text-blue-200 font-bold border border-slate-700">
+                                {item.gender}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
             ) : (
-              <>
-                <Eye className="w-3.5 h-3.5 text-blue-300" />
-                <span>Fetch & Try On</span>
-              </>
+              <div className="py-8 text-center text-slate-400 text-xs">
+                No garments found in your wardrobe matching this filter.
+              </div>
             )}
-          </button>
-        </div>
+          </div>
+        )}
 
-        {/* Quick Demo Links for Instant 1-Click Testing */}
-        <div className="space-y-2 pt-1 border-t border-slate-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-slate-400">Quick Demo Presets:</span>
-            <div className="inline-flex p-0.5 bg-[#0b1329] rounded-xl border border-slate-800 text-[10px]">
-              {(['all', 'men', 'women'] as const).map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setTryOnGender(g)}
-                  className={`px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    tryOnGender === g
-                      ? 'bg-[#0e244d] text-white border border-[#1e3a8a]'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
-                </button>
-              ))}
+        {/* ─── Mode 2: Suggested Store Clothes ─────────────────── */}
+        {sourceType === 'suggested' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[11px] text-slate-400">
+                Curated retail designs ready for instant 1-click drape:
+              </span>
+              <div className="flex items-center gap-1.5 bg-[#0b1329] p-1 rounded-xl border border-slate-800 text-[10px]">
+                <span className="text-slate-500 font-bold uppercase px-1.5 hidden sm:inline">
+                  Category:
+                </span>
+                {(['all', 'men', 'women'] as const).map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setTryOnGender(g)}
+                    className={`px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      tryOnGender === g
+                        ? 'bg-[#0e244d] text-white border border-[#1e3a8a]'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-80 overflow-y-auto p-1 scrollbar-thin">
+              {demoGarments
+                .filter((g) => tryOnGender === 'all' || g.gender === tryOnGender || g.gender === 'unisex')
+                .map((garment) => {
+                  const isSelected = activeGarment.id === garment.id;
+                  return (
+                    <button
+                      key={garment.id}
+                      onClick={() => {
+                        setActiveGarment(garment);
+                        triggerDrapeScan();
+                      }}
+                      className={`p-2.5 rounded-2xl border text-left transition-all group relative cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-[#132d5e] border-[#3b82f6] shadow-md ring-1 ring-blue-400/80'
+                          : 'bg-[#0b1329] border-slate-800 hover:border-slate-700 hover:bg-[#0e1a38]'
+                      }`}
+                    >
+                      <div className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-950 relative mb-2">
+                        <img
+                          src={garment.imageUrl}
+                          alt={garment.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-sm text-blue-300">
+                          {garment.store}
+                        </span>
+                        {isSelected && (
+                          <span className="absolute top-1.5 right-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500 text-white shadow-xs flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            <span>Fitted</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs font-bold text-white truncate">
+                          {garment.name}
+                        </h4>
+                        <div className="flex items-center justify-between text-[10px] mt-1">
+                          <span className="text-emerald-400 font-bold">{garment.price}</span>
+                          {garment.gender && (
+                            <span className="uppercase text-[9px] px-1.5 py-0.2 rounded bg-black/60 text-slate-300 font-bold border border-slate-700">
+                              {garment.gender}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
           </div>
+        )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            {demoGarments
-              .filter((g) => tryOnGender === 'all' || g.gender === tryOnGender || g.gender === 'unisex')
-              .map((garment) => (
-                <button
-                  key={garment.id}
-                  onClick={() => {
-                    setInputUrl(garment.linkUrl);
-                    handleExtractFromUrl(garment.linkUrl);
-                  }}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeGarment.id === garment.id
-                      ? 'bg-[#132d5e] text-white border border-[#1e3a8a]'
-                      : 'bg-[#0b1329] text-slate-300 border border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <Store className="w-3 h-3 text-blue-300" />
-                  <span>{garment.store} • {garment.name.split(' ')[0]} {garment.name.split(' ')[1]}</span>
-                  {garment.gender && (
-                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-black/60 text-blue-300 font-bold border border-slate-700">
-                      {garment.gender}
-                    </span>
-                  )}
-                </button>
-              ))}
+        {/* ─── Mode 3: Link Extractor & Photo Upload ───────────── */}
+        {sourceType === 'link' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-xs text-slate-300">
+                Paste any product page link from Zara, Myntra, Uniqlo, H&M, or ASOS:
+              </span>
+              <span className="text-[11px] text-slate-400">
+                Anywear Neural Web Crawler Active
+              </span>
+            </div>
+
+            {/* Input Bar */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={inputUrl}
+                  onChange={(e) => setInputUrl(e.target.value)}
+                  placeholder="Paste cloth web URL (e.g. https://www.zara.com/us/en/textured-overshirt-p012...)"
+                  className="w-full px-4 py-3 rounded-2xl bg-[#0b1329] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
+                />
+              </div>
+
+              <button
+                onClick={() => handleExtractFromUrl()}
+                disabled={isExtracting}
+                className="px-6 py-3 rounded-2xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold font-sans-clean flex items-center justify-center gap-2 transition-colors border border-[#1e3a8a] shrink-0 disabled:opacity-50 cursor-pointer"
+              >
+                {isExtracting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-300" />
+                    <span>Extracting Garment...</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5 text-blue-300" />
+                    <span>Fetch & Try On</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Or Upload Garment Photo */}
+            <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-white block">Or upload your own clothing photo:</span>
+                <span className="text-[11px] text-slate-400">Supported formats: PNG, JPG, WEBP</span>
+              </div>
+              <label className="px-4 py-2 rounded-xl bg-[#0b1329] hover:bg-[#132d5e] border border-slate-700 text-xs font-bold text-white cursor-pointer transition-colors inline-flex items-center gap-2">
+                <Upload className="w-3.5 h-3.5 text-blue-300" />
+                <span>Upload Garment File</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCustomGarmentUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Studio Viewport Grid */}
@@ -675,150 +927,89 @@ export const TryOnPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Garment Source Tabs */}
+          {/* Fit Adjustment & Drape Fine-Tuning */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Choose Garment Source
-              </h4>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setSourceType('link')}
-                  className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all ${
-                    sourceType === 'link'
-                      ? 'bg-[#0e244d] text-white'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  Link
-                </button>
-                <button
-                  onClick={() => setSourceType('wardrobe')}
-                  className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all ${
-                    sourceType === 'wardrobe'
-                      ? 'bg-[#0e244d] text-white'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  My Wardrobe
-                </button>
-                <button
-                  onClick={() => setSourceType('upload')}
-                  className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all ${
-                    sourceType === 'upload'
-                      ? 'bg-[#0e244d] text-white'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  Upload
-                </button>
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-[#0e244d]" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Drape & Fabric Alignment
+                </h4>
               </div>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {fittedSuccess ? 'Drape Active' : 'Ready'}
+              </span>
             </div>
 
-            {/* Tab 1: From Link Presets */}
-            {sourceType === 'link' && (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-500 font-sans-clean">
-                  Select any preset store item or paste your own URL above:
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {demoGarments
-                    .filter((g) => tryOnGender === 'all' || g.gender === tryOnGender || g.gender === 'unisex')
-                    .map((garment) => (
-                    <button
-                      key={garment.id}
-                      onClick={() => {
-                        setActiveGarment(garment);
-                        triggerDrapeScan();
-                      }}
-                      className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
-                        activeGarment.id === garment.id
-                          ? 'border-[#1e3a8a] bg-blue-50/50 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <img
-                        src={garment.imageUrl}
-                        alt={garment.name}
-                        className="w-10 h-10 rounded-xl object-cover shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <span className="text-[9px] uppercase font-bold text-[#132d5e] block">
-                          {garment.store}
-                        </span>
-                        <p className="text-xs font-bold text-slate-900 truncate">
-                          {garment.name}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <div className="flex items-center justify-between text-slate-500 text-[11px] mb-1">
+                  <span>Fabric Blend Opacity</span>
+                  <span className="font-mono font-bold text-slate-800">{drapeOpacity}%</span>
                 </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="100"
+                  value={drapeOpacity}
+                  onChange={(e) => setDrapeOpacity(Number(e.target.value))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
               </div>
-            )}
 
-            {/* Tab 2: From My Wardrobe */}
-            {sourceType === 'wardrobe' && (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-500 font-sans-clean">
-                  Select a piece you already own to preview fit:
-                </p>
-                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1 scrollbar-thin">
-                  {wardrobeItems
-                    .filter((item) => tryOnGender === 'all' || item.gender === tryOnGender || item.gender === 'unisex')
-                    .map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveGarment({
-                          id: item.id,
-                          name: item.name,
-                          store: item.brand || 'My Wardrobe',
-                          category: item.category,
-                          price: 'Owned',
-                          imageUrl: item.imageUrl,
-                          linkUrl: '',
-                        });
-                        triggerDrapeScan();
-                      }}
-                      className={`p-1.5 rounded-2xl border transition-all ${
-                        activeGarment.id === item.id
-                          ? 'border-[#1e3a8a] bg-blue-50/50 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="aspect-square w-full rounded-xl object-cover mb-1"
-                      />
-                      <p className="text-[10px] font-bold text-slate-900 truncate text-center">
-                        {item.name}
-                      </p>
-                    </button>
-                  ))}
+              <div>
+                <div className="flex items-center justify-between text-slate-500 text-[11px] mb-1">
+                  <span>Silhouette Fit Scale</span>
+                  <span className="font-mono font-bold text-slate-800">{drapeScale}%</span>
                 </div>
+                <input
+                  type="range"
+                  min="80"
+                  max="120"
+                  value={drapeScale}
+                  onChange={(e) => setDrapeScale(Number(e.target.value))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
               </div>
-            )}
 
-            {/* Tab 3: Upload Custom Garment */}
-            {sourceType === 'upload' && (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-500 font-sans-clean">
-                  Upload any photo of a shirt, jacket, or dress to try on:
-                </p>
-                <label className="border-2 border-dashed border-slate-300 hover:border-[#1e3a8a] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-2 bg-slate-50">
-                  <Upload className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-bold text-slate-700">Upload garment photo</span>
-                  <span className="text-[10px] text-slate-400">PNG, JPG up to 10MB</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCustomGarmentUpload}
-                    className="hidden"
-                  />
-                </label>
+              <div>
+                <div className="flex items-center justify-between text-slate-500 text-[11px] mb-1">
+                  <span>Vertical Hem Alignment</span>
+                  <span className="font-mono font-bold text-slate-800">{verticalOffset}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="-30"
+                  max="30"
+                  value={verticalOffset}
+                  onChange={(e) => setVerticalOffset(Number(e.target.value))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
               </div>
-            )}
+
+              <div className="pt-2 flex items-center gap-2">
+                <button
+                  onClick={triggerDrapeScan}
+                  disabled={isFitting}
+                  className="flex-1 py-2.5 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold font-sans-clean flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isFitting ? 'animate-spin' : ''}`} />
+                  <span>{fittedSuccess ? 'Re-align Drape' : 'Drape On Model'}</span>
+                </button>
+
+                {activeGarment.linkUrl && (
+                  <a
+                    href={activeGarment.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center"
+                    title="Open Product Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Upload Portrait Option for Studio Mode */}
