@@ -21,6 +21,9 @@ export const DashboardPage: React.FC = () => {
       setItems(data);
     };
     load();
+    const handleUpdate = () => load();
+    window.addEventListener('stylesphere:wardrobe-updated', handleUpdate);
+    return () => window.removeEventListener('stylesphere:wardrobe-updated', handleUpdate);
   }, []);
 
   const topsCount = items.filter((i) => i.category === 'tops').length;

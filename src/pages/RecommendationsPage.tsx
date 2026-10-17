@@ -54,6 +54,9 @@ export const RecommendationsPage: React.FC = () => {
       setSavedOutfits(saved);
     };
     loadInitial();
+    const handleUpdate = () => loadInitial();
+    window.addEventListener('stylesphere:wardrobe-updated', handleUpdate);
+    return () => window.removeEventListener('stylesphere:wardrobe-updated', handleUpdate);
   }, []);
 
   const loadSaved = async () => {

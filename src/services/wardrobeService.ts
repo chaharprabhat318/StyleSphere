@@ -15,7 +15,13 @@ const STORAGE_KEY = 'stylesphere_wardrobe_trending_2026_v4';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 class WardrobeService {
+  private memoryCache: WardrobeItem[] | null = null;
+
   private getStoredItems(): WardrobeItem[] {
+    if (this.memoryCache && this.memoryCache.length > 0) {
+      return this.memoryCache;
+    }
+
     try {
       // Actively purge older version keys from user browser cache
       LEGACY_STORAGE_KEYS.forEach((k) => {
@@ -26,8 +32,13 @@ class WardrobeService {
 
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
-        return INITIAL_WARDROBE;
+        this.memoryCache = [...INITIAL_WARDROBE];
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
+        } catch (e) {
+          console.warn('Could not persist initial wardrobe to localStorage', e);
+        }
+        return this.memoryCache;
       }
 
       const parsed: WardrobeItem[] = JSON.parse(stored);
@@ -46,22 +57,42 @@ class WardrobeService {
       const hasNewTrendingItems = parsed.some((p) => p.id === 'item-top-1');
 
       if (hasOldLegacyItems || !hasNewTrendingItems) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
-        return INITIAL_WARDROBE;
+        this.memoryCache = [...INITIAL_WARDROBE];
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
+        } catch (e) {}
+        return this.memoryCache;
       }
 
+      this.memoryCache = parsed;
       return parsed;
     } catch (e) {
       console.warn('Failed to parse wardrobe from localStorage, falling back to initial data', e);
-      return INITIAL_WARDROBE;
+      this.memoryCache = [...INITIAL_WARDROBE];
+      return this.memoryCache;
     }
   }
 
   private saveStoredItems(items: WardrobeItem[]): void {
+    this.memoryCache = items;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch (e) {
-      console.error('Failed to save wardrobe to localStorage', e);
+      console.warn('Failed to save wardrobe to localStorage (quota or disabled), retained in memoryCache', e);
+      try {
+        LEGACY_STORAGE_KEYS.forEach((k) => {
+          try {
+            localStorage.removeItem(k);
+          } catch {}
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      } catch (err2) {
+        console.warn('LocalStorage quota still exceeded, retained in memory cache only', err2);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('stylesphere:wardrobe-updated'));
     }
   }
 

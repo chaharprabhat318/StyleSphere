@@ -33,10 +33,15 @@ export const ClothingCard: React.FC<ClothingCardProps> = ({
 
         {/* Top Floating Badges */}
         <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[9px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-700 border border-slate-200/80 shadow-sm">
               {item.category}
             </span>
+            {item.fit && (
+              <span className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm border bg-amber-50/95 text-amber-800 border-amber-200/80 backdrop-blur-md">
+                {item.fit}
+              </span>
+            )}
             {item.gender && (
               <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm border ${
                 item.gender === 'women'

@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, Sparkles, Image as ImageIcon, Check } from 'lucide-react';
-import type { ClothingCategory, OccasionType, StyleVibe, WardrobeItem, GenderCategory } from '../../types/wardrobe';
+import { X, Sparkles, Image as ImageIcon, Check, Loader2 } from 'lucide-react';
+import type {
+  ClothingCategory,
+  OccasionType,
+  StyleVibe,
+  WardrobeItem,
+  GenderCategory,
+  FashionArchetype,
+} from '../../types/wardrobe';
 import { wardrobeService } from '../../services/wardrobeService';
 
 interface ItemUploadModalProps {
@@ -9,19 +16,65 @@ interface ItemUploadModalProps {
   onItemAdded: (item: WardrobeItem) => void;
 }
 
+// Client-side Canvas Image Compression: downsamples large camera/device images into ~30-60KB JPEGs
+// This guarantees localStorage quota will never be exceeded.
+const compressImageFile = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        // High quality JPEG compression (0.82)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClose, onItemAdded }) => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ClothingCategory>('tops');
   const [subCategory, setSubCategory] = useState('');
+  const [fit, setFit] = useState<WardrobeItem['fit']>('loose');
+  const [archetype, setArchetype] = useState<FashionArchetype>('streetwear');
   const [imageUrl, setImageUrl] = useState('');
   const [color, setColor] = useState('Chalk White');
   const [colorHex, setColorHex] = useState('#F8F9FA');
-  const [style, setStyle] = useState<StyleVibe>('minimal');
+  const [style, setStyle] = useState<StyleVibe>('streetwear');
   const [gender, setGender] = useState<GenderCategory>('unisex');
   const [occasions, setOccasions] = useState<OccasionType[]>(['casual', 'college']);
   const [season, setSeason] = useState<'spring' | 'summer' | 'fall' | 'winter' | 'all-season'>('all-season');
   const [brand, setBrand] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reset form whenever the modal opens
@@ -30,38 +83,42 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
       setName('');
       setCategory('tops');
       setSubCategory('');
+      setFit('loose');
+      setArchetype('streetwear');
       setImageUrl('');
       setColor('Chalk White');
       setColorHex('#F8F9FA');
-      setStyle('minimal');
+      setStyle('streetwear');
       setGender('unisex');
       setOccasions(['casual', 'college']);
       setSeason('all-season');
       setBrand('');
       setError(null);
       setIsSubmitting(false);
+      setIsProcessingImage(false);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file (JPEG, PNG, WEBP).');
         return;
       }
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image file size must be under 5MB.');
-        return;
-      }
       setError(null);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setIsProcessingImage(true);
+      try {
+        const compressed = await compressImageFile(file);
+        setImageUrl(compressed);
+      } catch (err) {
+        console.error('Image compression failed', err);
+        setError('Failed to process image file. Please try another image.');
+      } finally {
+        setIsProcessingImage(false);
+      }
     }
   };
 
@@ -75,19 +132,22 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
     }
   };
 
-  // Aesthetic Preset Auto-Fill for instantaneous demo
+  // Aesthetic Preset Auto-Fill for instantaneous testing & demo
   const handleSimulatedAutoTag = () => {
     setName('300GSM Heavyweight Boxy Cropped Tee');
     setCategory('tops');
     setSubCategory('Boxy Cropped Tee');
+    setFit('cropped');
+    setArchetype('streetwear');
     setColor('Vintage Black');
     setColorHex('#18181B');
     setStyle('streetwear');
     setGender('unisex');
     setOccasions(['college', 'casual', 'party']);
     setSeason('all-season');
-    brand && setBrand('Represent Clo');
+    setBrand('Represent Clo');
     setImageUrl('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=85');
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,7 +157,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
       return;
     }
     if (!imageUrl) {
-      setError('Please upload an image or select a link.');
+      setError('Please upload an image or provide an image link.');
       return;
     }
 
@@ -109,12 +169,14 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
         name: name.trim(),
         category,
         subCategory: subCategory.trim() || undefined,
+        fit,
+        archetype,
         imageUrl,
-        color,
+        color: color.trim() || 'Custom Tone',
         colorHex,
         style,
         gender,
-        occasions,
+        occasions: occasions.length > 0 ? occasions : ['casual'],
         season,
         brand: brand.trim() || undefined,
         isFavorite: false,
@@ -124,6 +186,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
       onItemAdded(created);
       onClose();
     } catch (err: any) {
+      console.error('Error adding item:', err);
       setError(err?.message || 'Failed to save item. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -132,15 +195,42 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
 
   const categories: ClothingCategory[] = ['tops', 'bottoms', 'outerwear', 'footwear', 'accessories'];
   const styles: StyleVibe[] = ['minimal', 'streetwear', 'smart casual', 'classic', 'sporty', 'cozy'];
-  const occasionList: OccasionType[] = ['college', 'casual', 'party', 'formal', 'date'];
+  const occasionList: OccasionType[] = ['college', 'casual', 'party', 'formal', 'date', 'sporty'];
+
+  const fits: Array<{ value: WardrobeItem['fit']; label: string }> = [
+    { value: 'loose', label: 'Loose Fit' },
+    { value: 'wide-leg', label: 'Wide-Leg Silhouette' },
+    { value: 'baggy', label: 'Baggy / Puddle Fit' },
+    { value: 'bootcut', label: 'Bootcut / Flared' },
+    { value: 'straight', label: 'Relaxed Straight' },
+    { value: 'cropped', label: 'Boxy Cropped' },
+    { value: 'boxy', label: 'Heavyweight Boxy' },
+    { value: 'slim', label: 'Slim Fit' },
+    { value: 'relaxed', label: 'Relaxed Classic' },
+    { value: 'chunky', label: 'Chunky Platform' },
+    { value: 'sleek', label: 'Sleek Minimal' },
+  ];
+
+  const archetypes: FashionArchetype[] = [
+    'streetwear',
+    'old money',
+    'minimalist',
+    'clean fit',
+    'techwear',
+    'Y2K',
+    'dark academia',
+    'boho',
+    'vintage',
+    'luxe',
+  ];
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl relative">
+      <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl relative my-8">
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="font-editorial text-xl text-slate-900 font-normal">Catalog New Piece</h3>
+            <h3 className="font-editorial text-xl text-slate-900 font-bold">Catalog New Piece</h3>
             <p className="text-xs text-slate-500 mt-0.5 font-sans-clean">
               Archive a garment into your private digital capsule
             </p>
@@ -156,7 +246,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[78vh] overflow-y-auto font-sans-clean">
           {error && (
-            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs">
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium">
               {error}
             </div>
           )}
@@ -173,7 +263,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                 className="flex items-center gap-1.5 text-xs text-[#0e244d] hover:text-[#193a77] cursor-pointer font-bold"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Auto-Fill Editorial Piece</span>
+                <span>Auto-Fill Sample Piece</span>
               </button>
             </div>
 
@@ -186,17 +276,22 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 />
                 <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0e244d] flex items-center justify-center mb-2">
                     <ImageIcon className="w-4 h-4" />
                   </div>
                   <span className="text-xs font-semibold text-slate-800">Upload Photo</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG under 5MB</span>
+                  <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG (Auto-optimized)</span>
                 </div>
               </div>
 
               {/* Preview Box */}
               <div className="h-28 rounded-2xl border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden relative">
-                {imageUrl ? (
+                {isProcessingImage ? (
+                  <div className="flex flex-col items-center gap-1.5 text-xs text-slate-500">
+                    <Loader2 className="w-5 h-5 text-[#0e244d] animate-spin" />
+                    <span>Optimizing image...</span>
+                  </div>
+                ) : imageUrl ? (
                   <img src={imageUrl} alt="Garment Preview" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-xs text-slate-400 font-sans-clean">Image Preview</span>
@@ -210,11 +305,11 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="Or paste an image web link (https://...)"
-              className="mt-2 w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+              className="mt-2 w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0e244d] focus:bg-white transition-colors"
             />
           </div>
 
-          {/* Details */}
+          {/* Details: Title & Brand */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -225,8 +320,8 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Poplin Overshirt"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                placeholder="e.g. Cropped Boxy Heavyweight Tee"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0e244d] focus:bg-white transition-colors"
               />
             </div>
             <div>
@@ -237,13 +332,13 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                 type="text"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                placeholder="e.g. Lemaire, Acne, Uniqlo"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                placeholder="e.g. Represent, Acne Studios, Stüssy"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0e244d] focus:bg-white transition-colors"
               />
             </div>
           </div>
 
-          {/* Clothing Type & Style */}
+          {/* Clothing Type & Fit Silhouette */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -252,11 +347,47 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ClothingCategory)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white capitalize cursor-pointer transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0e244d] focus:bg-white capitalize cursor-pointer transition-colors"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
                     {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                Fit Silhouette
+              </label>
+              <select
+                value={fit}
+                onChange={(e) => setFit(e.target.value as WardrobeItem['fit'])}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0e244d] focus:bg-white cursor-pointer transition-colors"
+              >
+                {fits.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Aesthetic Archetype & Aesthetic Vibe */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                Fashion Archetype
+              </label>
+              <select
+                value={archetype}
+                onChange={(e) => setArchetype(e.target.value as FashionArchetype)}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0e244d] focus:bg-white capitalize cursor-pointer transition-colors"
+              >
+                {archetypes.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
                   </option>
                 ))}
               </select>
@@ -268,7 +399,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
               <select
                 value={style}
                 onChange={(e) => setStyle(e.target.value as StyleVibe)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white capitalize cursor-pointer transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0e244d] focus:bg-white capitalize cursor-pointer transition-colors"
               >
                 {styles.map((s) => (
                   <option key={s} value={s}>
@@ -277,6 +408,20 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Sub-Category Descriptor */}
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              Sub-Category / Style Cut
+            </label>
+            <input
+              type="text"
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+              placeholder="e.g. Wide-Leg Baggy Denim, Cropped Heavyweight Tee"
+              className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0e244d] focus:bg-white transition-colors"
+            />
           </div>
 
           {/* Category / Gender */}
@@ -316,7 +461,7 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 placeholder="e.g. Chalk White, Muted Sage"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0e244d] focus:bg-white transition-colors"
               />
             </div>
             <div>
@@ -373,10 +518,11 @@ export const ItemUploadModal: React.FC<ItemUploadModalProps> = ({ isOpen, onClos
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-full bg-[#0e244d] hover:bg-[#15346d] text-white border border-[#1e3a8a] text-xs font-semibold tracking-wide shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              disabled={isSubmitting || isProcessingImage}
+              className="px-6 py-2.5 rounded-full bg-[#0e244d] hover:bg-[#15346d] text-white border border-[#1e3a8a] text-xs font-semibold tracking-wide shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
-              {isSubmitting ? 'Cataloging...' : 'Add to Closet'}
+              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isSubmitting ? 'Cataloging...' : 'Add to Closet'}</span>
             </button>
           </div>
         </form>

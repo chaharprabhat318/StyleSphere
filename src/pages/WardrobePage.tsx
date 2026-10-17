@@ -80,6 +80,18 @@ const DetailModal: React.FC<DetailModalProps> = ({
                   <span>Wear History</span>
                   <span className="text-slate-800 font-semibold">{item.wearCount} times logged</span>
                 </div>
+                {item.fit && (
+                  <div className="flex justify-between text-slate-500">
+                    <span>Fit Silhouette</span>
+                    <span className="text-amber-800 capitalize font-bold">{item.fit}</span>
+                  </div>
+                )}
+                {item.archetype && (
+                  <div className="flex justify-between text-slate-500">
+                    <span>Aesthetic Archetype</span>
+                    <span className="text-[#0e244d] capitalize font-bold">{item.archetype}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-slate-500">
                   <span>Occasion Fit</span>
                   <span className="text-slate-800 capitalize font-medium">{item.occasions.join(', ')}</span>

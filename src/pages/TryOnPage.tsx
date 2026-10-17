@@ -156,19 +156,25 @@ export const TryOnPage: React.FC = () => {
       const items = await wardrobeService.getItems();
       setWardrobeItems(items);
       if (items.length > 0) {
-        setActiveGarment({
-          id: items[0].id,
-          name: items[0].name,
-          store: items[0].brand || 'My Wardrobe',
-          category: items[0].category,
-          gender: items[0].gender,
-          price: 'In Your Closet',
-          imageUrl: items[0].imageUrl,
-          linkUrl: '',
+        setActiveGarment((prev) => {
+          if (prev) return prev;
+          return {
+            id: items[0].id,
+            name: items[0].name,
+            store: items[0].brand || 'My Wardrobe',
+            category: items[0].category,
+            gender: items[0].gender,
+            price: 'In Your Closet',
+            imageUrl: items[0].imageUrl,
+            linkUrl: '',
+          };
         });
       }
     };
     load();
+    const handleUpdate = () => load();
+    window.addEventListener('stylesphere:wardrobe-updated', handleUpdate);
+    return () => window.removeEventListener('stylesphere:wardrobe-updated', handleUpdate);
   }, []);
 
   // Callback ref guarantees video node attaches stream immediately upon DOM mounting
