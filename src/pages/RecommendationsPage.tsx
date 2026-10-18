@@ -12,11 +12,15 @@ import {
   SunMedium,
   Snowflake,
   Sun,
-  ChevronDown,
+  ArrowRight,
+  ArrowLeft,
+  AlertTriangle,
+  Info,
+  Layers,
 } from 'lucide-react';
 import type { OccasionType, StyleVibe, WardrobeItem, FashionArchetype } from '../types/wardrobe';
 import type { OutfitRecommendation, RecommendationCriteria } from '../types/outfit';
-import { outfitService } from '../services/outfitService';
+import { outfitService, type CoverageWarning } from '../services/outfitService';
 import { wardrobeService } from '../services/wardrobeService';
 
 export const RecommendationsPage: React.FC = () => {
@@ -30,11 +34,17 @@ export const RecommendationsPage: React.FC = () => {
   const [weather, setWeather] = useState<'mild' | 'warm' | 'cold'>('mild');
   const [preferredColor, setPreferredColor] = useState<string>('all');
 
+  // Wizard Stepper State: 1 = Occasion & Target, 2 = Aesthetic & Archetype, 3 = Climate & Color, 4 = Review & Synthesize
+  const [wizardStep, setWizardStep] = useState<number>(1);
+
   // Generation & Results State (Manual trigger only)
   const [hasGenerated, setHasGenerated] = useState<boolean>(false);
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
+  const [warnings, setWarnings] = useState<CoverageWarning[]>([]);
   const [selectedOutfitIndex, setSelectedOutfitIndex] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [appliedCriteria, setAppliedCriteria] = useState<RecommendationCriteria | null>(null);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
   // Wardrobe archive for swapping
@@ -64,9 +74,10 @@ export const RecommendationsPage: React.FC = () => {
     setSavedOutfits(saved);
   };
 
-  // Explicit User Action: Click to Generate
+  // Explicit User Action: Click to Generate with safe async handling
   const handleGenerateOutfits = async () => {
     setIsGenerating(true);
+    setGenerationError(null);
 
     const activeCriteria: RecommendationCriteria = {
       occasion,
@@ -77,14 +88,25 @@ export const RecommendationsPage: React.FC = () => {
       preferredColor: preferredColor !== 'all' ? preferredColor : undefined,
     };
 
-    // Deliberate synthesis delay for neural feedback feel
-    setTimeout(async () => {
-      const results = await outfitService.generateRecommendations(activeCriteria);
-      setRecommendations(results);
+    try {
+      // Deliberate synthesis delay for neural feedback feel
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const result = await outfitService.generateRecommendations(activeCriteria);
+      setRecommendations(result.recommendations);
+      setWarnings(result.warnings);
+      setAppliedCriteria(activeCriteria);
       setSelectedOutfitIndex(0);
       setHasGenerated(true);
+    } catch (err) {
+      console.error('Failed to generate outfits:', err);
+      setGenerationError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to synthesize outfit recommendations. Please check your wardrobe items and try again.',
+      );
+    } finally {
       setIsGenerating(false);
-    }, 500);
+    }
   };
 
   const activeOutfit: OutfitRecommendation | undefined = recommendations[selectedOutfitIndex];
@@ -105,31 +127,52 @@ export const RecommendationsPage: React.FC = () => {
       item.id === swappingSlot.id ? newItem : item
     );
 
+    // Reuse the exact RecommendationCriteria used when the outfit was scored.
+    // Do not silently use potentially changed wizard state.
+    const criteriaForScoring: RecommendationCriteria =
+      activeOutfit.criteria ?? appliedCriteria ?? {
+        occasion: activeOutfit.occasion,
+        style: activeOutfit.style,
+        archetype: activeOutfit.archetype,
+        gender:
+          activeOutfit.gender === 'women' || activeOutfit.gender === 'men'
+            ? activeOutfit.gender
+            : undefined,
+      };
+
+    const recalculated = outfitService.calculateCompatibilityScore(
+      updatedItems,
+      criteriaForScoring,
+    );
+
+    // Preserve the previous score only when recalculation genuinely cannot be performed (null)
+    const finalScore = recalculated !== null ? recalculated : activeOutfit.compatibilityScore;
+
     const updatedRecs = [...recommendations];
     updatedRecs[selectedOutfitIndex] = {
       ...activeOutfit,
       items: updatedItems,
-      compatibilityScore: Math.min(100, Math.max(88, activeOutfit.compatibilityScore + Math.floor(Math.random() * 5) - 2)),
+      compatibilityScore: finalScore,
     };
 
     setRecommendations(updatedRecs);
     setSwappingSlot(null);
   };
 
-  const occasionsList: Array<{ id: OccasionType; label: string }> = [
-    { id: 'casual', label: 'Everyday Casual' },
-    { id: 'college', label: 'College / Campus' },
-    { id: 'date', label: 'Dinner & Date' },
-    { id: 'party', label: 'Evening Social' },
-    { id: 'formal', label: 'Formal / Office' },
+  const occasionsList: Array<{ id: OccasionType; label: string; desc: string }> = [
+    { id: 'casual', label: 'Everyday Casual', desc: 'Relaxed daywear, coffee runs, and easy city outings' },
+    { id: 'college', label: 'College / Campus', desc: 'Effortless lecture-to-library comfortable rotation' },
+    { id: 'date', label: 'Dinner & Date', desc: 'Polished silhouette with subtle elevated contrast' },
+    { id: 'party', label: 'Evening Social', desc: 'Nightlife vibrancy with bold texture play' },
+    { id: 'formal', label: 'Formal / Office', desc: 'Structured tailoring and clean contemporary poise' },
   ];
 
-  const stylesList: Array<{ id: StyleVibe; label: string }> = [
-    { id: 'minimal', label: 'Minimalist' },
-    { id: 'smart casual', label: 'Smart Casual' },
-    { id: 'streetwear', label: 'Streetwear' },
-    { id: 'classic', label: 'Classic' },
-    { id: 'cozy', label: 'Cozy' },
+  const stylesList: Array<{ id: StyleVibe; label: string; desc: string }> = [
+    { id: 'minimal', label: 'Minimalist', desc: 'Restrained neutrals & clean lines' },
+    { id: 'smart casual', label: 'Smart Casual', desc: 'Elevated staples & relaxed tailoring' },
+    { id: 'streetwear', label: 'Streetwear', desc: 'Contemporary volume & urban energy' },
+    { id: 'classic', label: 'Classic', desc: 'Timeless cuts & enduring silhouettes' },
+    { id: 'cozy', label: 'Cozy', desc: 'Textured knits & relaxed comfort' },
   ];
 
   const archetypesList: Array<{ id: FashionArchetype; label: string; desc: string }> = [
@@ -145,23 +188,39 @@ export const RecommendationsPage: React.FC = () => {
     { id: 'luxe', label: 'Luxe', desc: 'High-glamour satin, rich fabrics, commanding evening presence' },
   ];
 
-  const weatherOptions: Array<{ id: 'warm' | 'mild' | 'cold'; label: string; icon: React.FC<{ className?: string }> }> = [
-    { id: 'warm', label: 'Warm (25°C+)', icon: Sun },
-    { id: 'mild', label: 'Mild (18°C–22°C)', icon: SunMedium },
-    { id: 'cold', label: 'Cold Layering (<15°C)', icon: Snowflake },
+  const weatherOptions: Array<{ id: 'warm' | 'mild' | 'cold'; label: string; desc: string; icon: React.FC<{ className?: string }> }> = [
+    { id: 'warm', label: 'Warm (25°C+)', desc: 'Lightweight 2-piece base, breathable drape', icon: Sun },
+    { id: 'mild', label: 'Mild (18°C–22°C)', desc: 'Versatile layering with light overshirts', icon: SunMedium },
+    { id: 'cold', label: 'Cold Layering (<15°C)', desc: 'Full 3-piece layering with substantial outerwear', icon: Snowflake },
   ];
 
   const colorPalettes = [
-    { id: 'all', label: 'All Palette' },
-    { id: 'white', label: 'Crisp White' },
-    { id: 'navy', label: 'Navy & Blue' },
-    { id: 'black', label: 'Monochrome' },
-    { id: 'beige', label: 'Earth & Neutral' },
+    { id: 'all', label: 'All Palette', color: '#64748b', desc: 'Natural color harmony across closet' },
+    { id: 'white', label: 'Crisp White', color: '#f8fafc', desc: 'Bright neutrals & ecru foundations' },
+    { id: 'navy', label: 'Navy & Blue', color: '#1e3a8a', desc: 'Classic navy, indigo & denim' },
+    { id: 'black', label: 'Monochrome', color: '#0f172a', desc: 'Obsidian, charcoal & dark tones' },
+    { id: 'beige', label: 'Earth & Neutral', color: '#d4b996', desc: 'Warm camel, sand, khaki & oat' },
   ];
+
+  // Effective wardrobe pool matching outfitService fallback behavior
+  const { pool: effectivePool, isUsingFallback } = outfitService.getEffectivePool(
+    allItems,
+    gender,
+  );
+
+  const topsInPool = effectivePool.filter((i) => i.category === 'tops').length;
+  const bottomsInPool = effectivePool.filter((i) => i.category === 'bottoms').length;
+  const outerInPool = effectivePool.filter((i) => i.category === 'outerwear').length;
+  const shoesInPool = effectivePool.filter((i) => i.category === 'footwear').length;
+  const accInPool = effectivePool.filter((i) => i.category === 'accessories').length;
+
+  const archetypeMatchesCount = effectivePool.filter((i) => i.archetype === archetype).length;
+  const styleMatchesCount = effectivePool.filter((i) => i.style === style).length;
+  const occasionMatchesCount = effectivePool.filter((i) => i.occasions.includes(occasion)).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
-      {/* Editorial Header (No weather badge) */}
+      {/* Editorial Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2">
@@ -176,7 +235,8 @@ export const RecommendationsPage: React.FC = () => {
             AI Outfit Generator
           </h1>
           <p className="text-xs text-slate-600 mt-1.5 max-w-2xl font-sans-clean leading-relaxed">
-            Specify your occasion, aesthetic vibe, and layering preferences below. Click &quot;Generate AI Outfits&quot; to synthesize mathematically harmonized looks from your wardrobe.
+            Configure your occasion, aesthetic vibe, and layering preferences through our guided stylist wizard below.
+            Synthesize mathematically harmonized looks calibrated to your actual wardrobe inventory.
           </p>
         </div>
 
@@ -184,7 +244,7 @@ export const RecommendationsPage: React.FC = () => {
         <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white border border-slate-200 shadow-sm text-xs font-bold">
           <button
             onClick={() => setActiveTab('generator')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
               activeTab === 'generator'
                 ? 'bg-[#0e244d] text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -196,7 +256,7 @@ export const RecommendationsPage: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('saved')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
               activeTab === 'saved'
                 ? 'bg-[#0e244d] text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -210,257 +270,573 @@ export const RecommendationsPage: React.FC = () => {
 
       {activeTab === 'generator' && (
         <>
-          {/* Systematic Criteria Filter Panel */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-3">
+          {/* Progressive Guided Stylist Wizard */}
+          <div className="p-6 md:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6">
+            {/* Stepper Header Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-5 gap-4">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#0e244d]" />
                 <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Select Outfit Parameters
+                  Guided Styling Wizard
                 </h2>
               </div>
-              
-              <div className="flex items-center gap-3">
-                {/* Category switcher */}
-                <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 hidden sm:inline">
-                    Category:
-                  </span>
-                  {(['all', 'men', 'women'] as const).map((g) => (
-                    <button
-                      key={g}
-                      onClick={() => setGender(g)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-                        gender === g
-                          ? 'bg-[#0e244d] text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+
+              {/* Progress Steps Indicator */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {[
+                  { num: 1, label: 'Occasion' },
+                  { num: 2, label: 'Aesthetic' },
+                  { num: 3, label: 'Climate' },
+                  { num: 4, label: 'Review' },
+                ].map((s) => (
+                  <button
+                    key={s.num}
+                    onClick={() => setWizardStep(s.num)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                      wizardStep === s.num
+                        ? 'bg-[#0e244d] text-white shadow-xs'
+                        : wizardStep > s.num
+                        ? 'bg-blue-50 text-[#132d5e] border border-blue-200'
+                        : 'bg-slate-100 text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        wizardStep === s.num
+                          ? 'bg-white text-[#0e244d]'
+                          : wizardStep > s.num
+                          ? 'bg-[#132d5e] text-white'
+                          : 'bg-slate-200 text-slate-600'
                       }`}
                     >
-                      {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
-                    </button>
-                  ))}
-                </div>
-
-                <span className="text-[11px] text-slate-500 hidden md:inline">
-                  {allItems.length} Pieces Available
-                </span>
+                      {wizardStep > s.num ? '✓' : s.num}
+                    </span>
+                    <span className="hidden md:inline">{s.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Dropdown Lists Bar: Occasion, Style Aesthetic & Archetypes */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-xs">
-              {/* Dropdown 1: Occasion */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                  Occasion Dropdown
-                </label>
-                <div className="relative">
-                  <select
-                    value={occasion}
-                    onChange={(e) => setOccasion(e.target.value as OccasionType)}
-                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 pr-8 focus:outline-none focus:border-[#0e244d] cursor-pointer shadow-xs"
-                  >
-                    {occasionsList.map((occ) => (
-                      <option key={occ.id} value={occ.id}>
-                        {occ.label}
-                      </option>
+            {/* Step 1: Occasion & Department */}
+            {wizardStep === 1 && (
+              <div className="wizard-step space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-editorial text-xl font-bold text-slate-900">
+                      Step 1: Choose Your Occasion & Wardrobe Focus
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Select where you plan to wear this outfit and which closet category to pull from.
+                    </p>
+                  </div>
+
+                  {/* Gender / Department toggle */}
+                  <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200 shrink-0">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
+                      Department:
+                    </span>
+                    {(['all', 'men', 'women'] as const).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setGender(g)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+                          gender === g
+                            ? 'bg-[#0e244d] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {g === 'all' ? 'All' : g === 'men' ? 'Men' : 'Women'}
+                      </button>
                     ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                  </div>
                 </div>
-              </div>
 
-              {/* Dropdown 2: Style Aesthetic */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                  Style Aesthetic Dropdown
-                </label>
-                <div className="relative">
-                  <select
-                    value={style}
-                    onChange={(e) => setStyle(e.target.value as StyleVibe)}
-                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 pr-8 focus:outline-none focus:border-[#0e244d] cursor-pointer shadow-xs"
-                  >
-                    {stylesList.map((st) => (
-                      <option key={st.id} value={st.id}>
-                        {st.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Dropdown 3: Archetypes (old money, streetwear, minimalist, Y2K, dark academia, clean fit, techwear, boho, vintage, luxe) */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#0e244d] block">
-                    Archetypes Dropdown
-                  </label>
-                  <span className="text-[9px] font-bold bg-[#0e244d] text-white px-1.5 py-0.2 rounded-md">
-                    10 Styles
-                  </span>
-                </div>
-                <div className="relative">
-                  <select
-                    value={archetype}
-                    onChange={(e) => setArchetype(e.target.value as FashionArchetype)}
-                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-white border-2 border-[#132d5e] text-xs font-bold text-[#0e244d] pr-8 focus:outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer shadow-xs"
-                  >
-                    {archetypesList.map((arch) => (
-                      <option key={arch.id} value={arch.id}>
-                        {arch.label} ({arch.id})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-[#0e244d] absolute right-3 top-3 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* 1. Occasion */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                  1. Occasion
-                </label>
-                <div className="flex flex-col gap-1.5">
-                  {occasionsList.map((occ) => (
-                    <button
-                      key={occ.id}
-                      onClick={() => setOccasion(occ.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all ${
-                        occasion === occ.id
-                          ? 'bg-[#0e244d] text-white shadow-xs'
-                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
-                      }`}
-                    >
-                      {occ.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. Style Aesthetic */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                  2. Style Aesthetic
-                </label>
-                <div className="flex flex-col gap-1.5">
-                  {stylesList.map((st) => (
-                    <button
-                      key={st.id}
-                      onClick={() => setStyle(st.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all ${
-                        style === st.id
-                          ? 'bg-[#0e244d] text-white shadow-xs'
-                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
-                      }`}
-                    >
-                      {st.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 3. Archetypes List (10 Fashion Archetypes) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#0e244d] block">
-                    3. Archetypes
-                  </label>
-                  <span className="text-[10px] font-semibold text-slate-400 capitalize">
-                    {archetype}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
-                  {archetypesList.map((arch) => (
-                    <button
-                      key={arch.id}
-                      onClick={() => setArchetype(arch.id)}
-                      className={`px-3 py-2 rounded-xl text-left transition-all ${
-                        archetype === arch.id
-                          ? 'bg-[#0e244d] text-white shadow-xs'
-                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold">{arch.label}</span>
-                        {archetype === arch.id && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-300" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {occasionsList.map((occ) => {
+                    const isSelected = occasion === occ.id;
+                    const count = effectivePool.filter((i) => i.occasions.includes(occ.id)).length;
+                    return (
+                      <button
+                        key={occ.id}
+                        onClick={() => setOccasion(occ.id)}
+                        className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                          isSelected
+                            ? 'bg-[#0e244d] border-[#0e244d] text-white shadow-sm ring-2 ring-blue-200'
+                            : 'bg-slate-50 border-slate-200/90 text-slate-800 hover:bg-slate-100/80 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>
+                            Occasion
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              isSelected
+                                ? 'bg-blue-900 text-blue-200'
+                                : count > 0
+                                ? 'bg-slate-200 text-slate-700'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {count} pieces
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold mt-1">{occ.label}</h4>
+                          <p className={`text-xs mt-1 leading-relaxed ${isSelected ? 'text-slate-200' : 'text-slate-500'}`}>
+                            {occ.desc}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-300 pt-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Active Selection</span>
+                          </div>
                         )}
-                      </div>
-                      <p className={`text-[10px] mt-0.5 line-clamp-1 ${
-                        archetype === arch.id ? 'text-blue-200' : 'text-slate-400'
-                      }`}>
-                        {arch.desc}
-                      </p>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Footer Controls */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <span className="text-xs text-slate-500">
+                    Selected: <strong className="text-slate-800">{occasionsList.find(o => o.id === occasion)?.label}</strong> ({gender === 'all' ? 'All Wardrobe' : isUsingFallback ? `${gender.toUpperCase()} (Fallback to All)` : gender.toUpperCase()})
+                  </span>
+                  <button
+                    onClick={() => setWizardStep(2)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Next: Vibe & Archetype</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* 4. Layering Condition, Color Palette & Generate */}
-              <div className="space-y-4 flex flex-col justify-between">
+            {/* Step 2: Aesthetic & Fashion Archetype */}
+            {wizardStep === 2 && (
+              <div className="wizard-step space-y-6">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                    4. Layering Condition
+                  <h3 className="font-editorial text-xl font-bold text-slate-900">
+                    Step 2: Aesthetic Vibe & Fashion Archetype
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Define the stylistic DNA and proportion philosophy for your curated look.
+                  </p>
+                </div>
+
+                {/* Style Aesthetic Filter Chips */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                    Style Aesthetic Vibe
                   </label>
-                  <div className="flex flex-col gap-1.5">
-                    {weatherOptions.map((w) => {
-                      const Icon = w.icon;
+                  <div className="flex flex-wrap gap-2">
+                    {stylesList.map((st) => {
+                      const isSelected = style === st.id;
+                      const count = effectivePool.filter((i) => i.style === st.id).length;
                       return (
                         <button
-                          key={w.id}
-                          onClick={() => setWeather(w.id)}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold text-left flex items-center gap-2 transition-all ${
-                            weather === w.id
+                          key={st.id}
+                          onClick={() => setStyle(st.id)}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                            isSelected
                               ? 'bg-[#0e244d] text-white shadow-xs'
-                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
+                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
                           }`}
                         >
-                          <Icon className="w-3.5 h-3.5 shrink-0" />
-                          <span>{w.label}</span>
+                          <span>{st.label}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.2 rounded-md ${
+                              isSelected ? 'bg-blue-900 text-blue-200' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {count}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
-                    Color Anchor
-                  </label>
-                  <div className="flex flex-wrap gap-1">
-                    {colorPalettes.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setPreferredColor(c.id)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
-                          preferredColor === c.id
-                            ? 'bg-[#0e244d] text-white font-bold'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
+                {/* Archetype Cards Grid */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                      Fashion Archetype (10 Available)
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      Select one to guide silhouette and color framing
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {archetypesList.map((arch) => {
+                      const isSelected = archetype === arch.id;
+                      const count = effectivePool.filter((i) => i.archetype === arch.id).length;
+                      return (
+                        <button
+                          key={arch.id}
+                          onClick={() => setArchetype(arch.id)}
+                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                            isSelected
+                              ? 'bg-[#0e244d] border-[#0e244d] text-white shadow-sm ring-2 ring-blue-200'
+                              : 'bg-slate-50 border-slate-200/90 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold">{arch.label}</span>
+                            <span
+                              className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md ${
+                                isSelected
+                                  ? 'bg-blue-900 text-blue-200'
+                                  : count > 0
+                                  ? 'bg-slate-200 text-slate-700'
+                                  : 'bg-slate-100 text-slate-400'
+                              }`}
+                            >
+                              {count > 0 ? `${count} in closet` : '0 tagged'}
+                            </span>
+                          </div>
+                          <p className={`text-[11px] leading-relaxed line-clamp-2 ${isSelected ? 'text-slate-200' : 'text-slate-500'}`}>
+                            {arch.desc}
+                          </p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
+                {/* Footer Controls */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                   <button
-                    onClick={handleGenerateOutfits}
-                    disabled={isGenerating}
-                    className="w-full py-3.5 rounded-2xl bg-[#0a1124] hover:bg-[#0e244d] text-white text-xs font-bold font-sans-clean transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50 active:scale-98"
+                    onClick={() => setWizardStep(1)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
                   >
-                    <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                    <span>{isGenerating ? 'Synthesizing Outfits...' : 'Generate AI Outfits'}</span>
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                  <button
+                    onClick={() => setWizardStep(3)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Next: Climate & Palette</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Step 3: Climate & Palette Anchor */}
+            {wizardStep === 3 && (
+              <div className="wizard-step space-y-6">
+                <div>
+                  <h3 className="font-editorial text-xl font-bold text-slate-900">
+                    Step 3: Layering Climate & Color Anchor
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Tune the recommendation engine to current temperature conditions and your preferred color focus.
+                  </p>
+                </div>
+
+                {/* Layering Condition Options */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                    Layering & Climate Condition
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    {weatherOptions.map((w) => {
+                      const Icon = w.icon;
+                      const isSelected = weather === w.id;
+                      return (
+                        <button
+                          key={w.id}
+                          onClick={() => setWeather(w.id)}
+                          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                            isSelected
+                              ? 'bg-[#0e244d] border-[#0e244d] text-white shadow-sm ring-2 ring-blue-200'
+                              : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <Icon className={`w-5 h-5 ${isSelected ? 'text-blue-300' : 'text-slate-600'}`} />
+                            {isSelected && <span className="text-[10px] font-bold text-blue-300 uppercase">Active</span>}
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold">{w.label}</h4>
+                            <p className={`text-[11px] mt-1 ${isSelected ? 'text-slate-200' : 'text-slate-500'}`}>
+                              {w.desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Color Anchor Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                      Color Anchor (Wired into Scoring)
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      Weighted scoring component favoring outfits featuring this hue
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    {colorPalettes.map((c) => {
+                      const isSelected = preferredColor === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => setPreferredColor(c.id)}
+                          className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                            isSelected
+                              ? 'bg-[#0e244d] border-[#0e244d] text-white shadow-sm ring-2 ring-blue-200'
+                              : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-xs shrink-0"
+                              style={{ backgroundColor: c.color }}
+                            />
+                            <span className="text-xs font-bold truncate">{c.label}</span>
+                          </div>
+                          <p className={`text-[10px] leading-tight ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                            {c.desc}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Scoring Methodology Advisory Box */}
+                <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 flex items-start gap-3">
+                  <Info className="w-4 h-4 text-[#132d5e] shrink-0 mt-0.5" />
+                  <div className="text-xs text-[#0e244d] leading-relaxed">
+                    <strong>Compatibility Scoring:</strong> Compatibility scores are calculated using a deterministic,
+                    normalized weighted algorithm based on color theory, silhouette proportions, and season compatibility.
+                    Weather suitability is scored continuously without discarding versatile items. Styling tips provide
+                    curated editorial guidance for your selected silhouette.
+                  </div>
+                </div>
+
+                {/* Footer Controls */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setWizardStep(2)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                  <button
+                    onClick={() => setWizardStep(4)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Next: Review & Synthesize</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Review & Synthesize */}
+            {wizardStep === 4 && (
+              <div className="wizard-step space-y-6">
+                <div>
+                  <h3 className="font-editorial text-xl font-bold text-slate-900">
+                    Step 4: Recipe Review & Wardrobe Inventory Readiness
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Verify your styling criteria and check closet compatibility before synthesizing outfits.
+                  </p>
+                </div>
+
+                {/* Parameter Summary Recipe Card */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                      Selected Styling Parameters
+                    </span>
+                    <span className="text-[11px] text-[#0e244d] font-semibold">
+                      Click any tag to modify
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    <button
+                      onClick={() => setWizardStep(1)}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left transition-all"
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Occasion</span>
+                      <span className="text-xs font-bold text-slate-800 capitalize block truncate mt-0.5">{occasion}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setWizardStep(1)}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left transition-all"
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Department</span>
+                      <span className="text-xs font-bold text-slate-800 uppercase block truncate mt-0.5">{gender}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setWizardStep(2)}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left transition-all"
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Vibe</span>
+                      <span className="text-xs font-bold text-slate-800 capitalize block truncate mt-0.5">{style}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setWizardStep(2)}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left transition-all"
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Archetype</span>
+                      <span className="text-xs font-bold text-slate-800 capitalize block truncate mt-0.5">{archetype}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setWizardStep(3)}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left transition-all"
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Climate</span>
+                      <span className="text-xs font-bold text-slate-800 capitalize block truncate mt-0.5">{weather}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setWizardStep(3)}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left transition-all"
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Color Anchor</span>
+                      <span className="text-xs font-bold text-slate-800 capitalize block truncate mt-0.5">{preferredColor}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Live Wardrobe Breakdown Card */}
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-[#0e244d]" />
+                      <span>Live Wardrobe Compatibility Analysis</span>
+                    </span>
+                    <span className="text-xs font-bold text-[#0e244d]">
+                      {effectivePool.length} Pieces in Effective Pool
+                      {isUsingFallback && ' (Full Wardrobe Fallback)'}
+                    </span>
+                  </div>
+
+                  {isUsingFallback && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                      <Info className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span>
+                        Selected department lacks required tops or bottoms. Using full wardrobe fallback ({effectivePool.length} pieces) to ensure complete outfit synthesis.
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Tops</span>
+                      <span className="text-base font-bold text-slate-800">{topsInPool}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Bottoms</span>
+                      <span className="text-base font-bold text-slate-800">{bottomsInPool}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Outerwear</span>
+                      <span className="text-base font-bold text-slate-800">{outerInPool}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Footwear</span>
+                      <span className="text-base font-bold text-slate-800">{shoesInPool}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 col-span-2 sm:col-span-1">
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Accessories</span>
+                      <span className="text-base font-bold text-slate-800">{accInPool}</span>
+                    </div>
+                  </div>
+
+                  {/* Pre-generation Tag Check */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">Archetype tagged pieces ({archetype}):</span>
+                      <span className={`font-bold ${archetypeMatchesCount > 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {archetypeMatchesCount > 0 ? `${archetypeMatchesCount} items found` : '0 items tagged (Color & Silhouette matched)'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">Style vibe tagged pieces ({style}):</span>
+                      <span className={`font-bold ${styleMatchesCount > 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {styleMatchesCount > 0 ? `${styleMatchesCount} items found` : '0 items tagged (Adjacent style compatibility rules used)'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">Occasion tagged pieces ({occasion}):</span>
+                      <span className={`font-bold ${occasionMatchesCount >= 2 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {occasionMatchesCount} items directly tagged
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Synthesis Action Button */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3">
+                  <button
+                    onClick={() => setWizardStep(3)}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer w-full sm:w-auto justify-center"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Climate</span>
+                  </button>
+
+                  <button
+                    onClick={handleGenerateOutfits}
+                    disabled={isGenerating || topsInPool === 0 || bottomsInPool === 0}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#0a1124] hover:bg-[#0e244d] text-white text-xs font-bold font-sans-clean transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50 active:scale-98"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                    <span>
+                      {isGenerating
+                        ? 'Synthesizing Neural Outfits...'
+                        : hasGenerated
+                        ? 'Re-synthesize AI Outfits'
+                        : 'Generate AI Outfits'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Error Advisory Banner */}
+          {generationError && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-rose-900">
+                    Outfit Generation Advisory
+                  </h4>
+                  <p className="text-xs text-rose-700 mt-0.5 leading-relaxed font-sans-clean">
+                    {generationError}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setGenerationError(null)}
+                className="p-1 rounded-lg text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
+                aria-label="Dismiss error"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Prompt State: When user hasn't clicked generate yet */}
           {!hasGenerated && !isGenerating && (
@@ -473,7 +849,8 @@ export const RecommendationsPage: React.FC = () => {
                   Ready to Synthesize Your Outfits
                 </h3>
                 <p className="text-xs text-slate-500 font-sans-clean leading-relaxed">
-                  Choose your parameters above and click <strong>&quot;Generate AI Outfits&quot;</strong> to view coordinated recommendations from your wardrobe.
+                  Walk through the 4 steps in the wizard above, or jump directly to Step 4 and click{' '}
+                  <strong>&quot;Generate AI Outfits&quot;</strong> to view coordinated recommendations from your wardrobe.
                 </p>
               </div>
               <button
@@ -481,7 +858,7 @@ export const RecommendationsPage: React.FC = () => {
                 className="px-6 py-3 rounded-2xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold font-sans-clean transition-all shadow-md active:scale-95 inline-flex items-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-blue-200" />
-                <span>Generate AI Outfits</span>
+                <span>Generate AI Outfits Now</span>
               </button>
             </div>
           )}
@@ -491,7 +868,7 @@ export const RecommendationsPage: React.FC = () => {
             <div className="p-16 text-center rounded-3xl bg-[#060a14] border border-slate-800 text-white shadow-xl space-y-4">
               <div className="w-12 h-12 rounded-full border-2 border-blue-400 border-t-transparent animate-spin mx-auto" />
               <h3 className="font-editorial text-xl font-bold">Synthesizing Outfits...</h3>
-              <p className="text-xs text-slate-400">Evaluating color theory, silhouettes, and occasion rules</p>
+              <p className="text-xs text-slate-400">Evaluating color theory, silhouette balance, and season compatibility</p>
             </div>
           )}
 
@@ -499,13 +876,13 @@ export const RecommendationsPage: React.FC = () => {
           {hasGenerated && !isGenerating && recommendations.length > 0 && activeOutfit && (
             <div className="space-y-6">
               {/* Look Selector Tabs */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
                   {recommendations.map((rec, idx) => (
                     <button
                       key={rec.id}
                       onClick={() => setSelectedOutfitIndex(idx)}
-                      className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
+                      className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
                         selectedOutfitIndex === idx
                           ? 'bg-[#060a14] text-white shadow-md'
                           : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
@@ -519,11 +896,11 @@ export const RecommendationsPage: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={handleSaveActiveOutfit}
                     disabled={savedSuccess}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-800 text-xs font-bold transition-colors shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-800 text-xs font-bold transition-colors shadow-xs cursor-pointer"
                   >
                     {savedSuccess ? (
                       <>
@@ -540,13 +917,35 @@ export const RecommendationsPage: React.FC = () => {
 
                   <button
                     onClick={() => navigate('/try-on')}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold transition-colors shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0e244d] hover:bg-[#132d5e] text-white text-xs font-bold transition-colors shadow-xs cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5 text-blue-300" />
                     <span>Virtual Try-On</span>
                   </button>
                 </div>
               </div>
+
+              {/* Coverage Warnings Banner: emitted strictly from actual metadata gaps */}
+              {warnings.length > 0 && (
+                <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      Wardrobe Coverage Advisory ({warnings.length})
+                    </span>
+                  </div>
+                  <div className="space-y-1.5 pl-6">
+                    {warnings.map((warn, i) => (
+                      <p key={i} className="text-xs text-amber-900 leading-relaxed font-sans-clean">
+                        <span className="font-semibold uppercase text-[10px] px-1.5 py-0.5 rounded-md bg-amber-200 text-amber-900 mr-1.5">
+                          {warn.type}
+                        </span>
+                        {warn.message}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Main Outfit Display Card */}
               <div className="rounded-3xl bg-[#060a14] border border-slate-800 p-6 md:p-8 text-white shadow-2xl space-y-6">
@@ -695,7 +1094,7 @@ export const RecommendationsPage: React.FC = () => {
               </p>
               <button
                 onClick={() => setActiveTab('generator')}
-                className="px-5 py-2.5 rounded-full bg-[#0e244d] text-white text-xs font-bold"
+                className="px-5 py-2.5 rounded-full bg-[#0e244d] text-white text-xs font-bold cursor-pointer"
               >
                 Back to Generator
               </button>
@@ -744,7 +1143,7 @@ export const RecommendationsPage: React.FC = () => {
                   <div className="flex items-center gap-2 pt-2">
                     <button
                       onClick={() => navigate('/try-on')}
-                      className="flex-1 py-2.5 rounded-xl bg-[#0a1124] hover:bg-[#0e244d] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                      className="flex-1 py-2.5 rounded-xl bg-[#0a1124] hover:bg-[#0e244d] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5 text-blue-300" />
                       <span>Try On</span>
@@ -772,7 +1171,7 @@ export const RecommendationsPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setSwappingSlot(null)}
-                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -795,7 +1194,7 @@ export const RecommendationsPage: React.FC = () => {
                   <button
                     key={altItem.id}
                     onClick={() => handleSwapPiece(altItem)}
-                    className="p-2 rounded-2xl border border-slate-200 hover:border-[#1e3a8a] hover:bg-blue-50/40 text-left transition-all group"
+                    className="p-2 rounded-2xl border border-slate-200 hover:border-[#1e3a8a] hover:bg-blue-50/40 text-left transition-all group cursor-pointer"
                   >
                     <div className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-100 mb-2">
                       <img src={altItem.imageUrl} alt={altItem.name} className="w-full h-full object-cover" />
@@ -813,7 +1212,7 @@ export const RecommendationsPage: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setSwappingSlot(null)}
-                className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 Cancel
               </button>
