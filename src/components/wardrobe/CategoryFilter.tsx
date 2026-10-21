@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, RotateCcw } from 'lucide-react';
+import { Search, Filter, RotateCcw, Trash2, Sparkles } from 'lucide-react';
 import type { ClothingCategory, OccasionType, WardrobeFilterOptions, GenderCategory } from '../../types/wardrobe';
 
 interface CategoryFilterProps {
@@ -7,6 +7,8 @@ interface CategoryFilterProps {
   categoryCounts: Record<ClothingCategory | 'all', number>;
   onFilterChange: (updates: Partial<WardrobeFilterOptions>) => void;
   onResetWardrobe?: () => void;
+  onClearWardrobe?: () => void;
+  onLoadSample?: () => void;
 }
 
 export const CategoryFilter: React.FC<CategoryFilterProps> = ({
@@ -14,6 +16,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categoryCounts,
   onFilterChange,
   onResetWardrobe,
+  onClearWardrobe,
+  onLoadSample,
 }) => {
   const categories: Array<{ id: ClothingCategory | 'all'; label: string }> = [
     { id: 'all', label: 'All Pieces' },
@@ -68,17 +72,41 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
           </div>
         </div>
 
-        {/* Restore sample demo button if needed */}
-        {onResetWardrobe && (
-          <button
-            onClick={onResetWardrobe}
-            title="Reset to sample wardrobe"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs text-slate-600 hover:text-[#0e244d] hover:bg-slate-100 transition-colors border border-slate-200/90 bg-white shadow-xs cursor-pointer whitespace-nowrap"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-[#0e244d]" />
-            <span className="hidden sm:inline font-medium">Reset Collection</span>
-          </button>
-        )}
+        {/* Action Buttons: Clear & Load Sample */}
+        <div className="flex items-center gap-2">
+          {onClearWardrobe && categoryCounts.all > 0 && (
+            <button
+              onClick={onClearWardrobe}
+              title="Empty entire wardrobe"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors border border-rose-200 bg-white shadow-xs cursor-pointer whitespace-nowrap"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span className="hidden sm:inline font-medium">Empty Wardrobe</span>
+            </button>
+          )}
+
+          {onLoadSample && (
+            <button
+              onClick={onLoadSample}
+              title="Reset trendy bottoms collection"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs text-slate-700 hover:text-[#0e244d] hover:bg-slate-100 transition-colors border border-slate-200/90 bg-white shadow-xs cursor-pointer whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#0e244d]" />
+              <span className="hidden sm:inline font-medium">Reset Trendy Bottoms</span>
+            </button>
+          )}
+
+          {onResetWardrobe && (
+            <button
+              onClick={onResetWardrobe}
+              title="Reset wardrobe"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs text-slate-600 hover:text-[#0e244d] hover:bg-slate-100 transition-colors border border-slate-200/90 bg-white shadow-xs cursor-pointer whitespace-nowrap"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-[#0e244d]" />
+              <span className="hidden sm:inline font-medium">Reset</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Category Pills Bar */}

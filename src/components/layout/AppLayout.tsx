@@ -7,7 +7,7 @@ import { wardrobeService } from '../../services/wardrobeService';
 
 export const AppLayout: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [totalCount, setTotalCount] = useState(26);
+  const [totalCount, setTotalCount] = useState(20);
   const location = useLocation();
 
   const fetchCount = async () => {
@@ -17,6 +17,9 @@ export const AppLayout: React.FC = () => {
 
   useEffect(() => {
     fetchCount();
+    const handleUpdate = () => fetchCount();
+    window.addEventListener('stylesphere:wardrobe-updated', handleUpdate);
+    return () => window.removeEventListener('stylesphere:wardrobe-updated', handleUpdate);
   }, [location.pathname]);
 
   const getPageMeta = () => {

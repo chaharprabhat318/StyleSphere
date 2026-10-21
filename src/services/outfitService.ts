@@ -98,32 +98,41 @@ function silhouetteScore(top: WardrobeItem, bottom: WardrobeItem): number {
   const topText = `${top.name} ${top.subCategory || ''}`.toLowerCase();
   const bottomText = `${bottom.name} ${bottom.subCategory || ''}`.toLowerCase();
 
-  const isCroppedOrSlimTop =
-    top.fit === 'cropped' || top.fit === 'slim' || top.fit === 'boxy' ||
-    topText.includes('cropped') || topText.includes('baby tee') ||
-    topText.includes('slim') || topText.includes('boxy');
+  const isCropped =
+    top.fit === 'cropped' || topText.includes('cropped') || topText.includes('baby tee');
+  const isOversizedOrBoxy =
+    top.fit === 'boxy' || top.fit === 'relaxed' || topText.includes('oversized') || topText.includes('boxy');
 
-  const isWideOrBaggyBottom =
-    bottom.fit === 'baggy' || bottom.fit === 'wide-leg' ||
-    bottom.fit === 'bootcut' || bottom.fit === 'loose' ||
-    bottomText.includes('baggy') || bottomText.includes('wide') ||
-    bottomText.includes('bootcut') || bottomText.includes('carpenter') ||
-    bottomText.includes('cargo') || bottomText.includes('parachute') ||
-    bottomText.includes('loose');
+  const isWideOrBaggy =
+    bottom.fit === 'wide-leg' || bottom.fit === 'baggy' ||
+    bottomText.includes('wide') || bottomText.includes('baggy') || bottomText.includes('puddle');
+  const isBootcut =
+    bottom.fit === 'bootcut' || bottomText.includes('bootcut') || bottomText.includes('flare');
+  const isStraight =
+    bottom.fit === 'straight' || bottomText.includes('straight');
 
   // Hard penalty for skinny jeans (user directive)
-  if (bottomText.includes('skinny')) return 20;
+  if (bottomText.includes('skinny')) return 15;
 
-  // Peak trend synergy: cropped/slim/boxy top + baggy/wide/bootcut bottom
-  if (isCroppedOrSlimTop && isWideOrBaggyBottom) return 100;
+  // 1. Cropped Top + Wide-Leg / Baggy Bottom (Peak 2025/2026 Golden Proportion: 1/3 Upper, 2/3 Lower)
+  if (isCropped && isWideOrBaggy) return 100;
 
-  // Cropped top + straight-leg
-  if (isCroppedOrSlimTop && (bottom.fit === 'straight' || bottomText.includes('straight'))) return 88;
+  // 2. Cropped Top + Bootcut / Flare Bottom (Peak Y2K / 90s Runway aesthetic)
+  if (isCropped && isBootcut) return 98;
 
-  // Any wide/baggy bottom without a cropped top
-  if (isWideOrBaggyBottom) return 92;
+  // 3. Cropped Top + Straight-Leg Bottom (Timeless Clean Fit / Parisian Minimal)
+  if (isCropped && isStraight) return 94;
 
-  return 75;
+  // 4. Oversized Boxy Top + Baggy / Wide-Leg Bottom (Peak Tokyo/Seoul Streetwear Silhouette)
+  if (isOversizedOrBoxy && isWideOrBaggy) return 96;
+
+  // 5. Oversized Top + Relaxed Straight / Bootcut Bottom
+  if (isOversizedOrBoxy && (isStraight || isBootcut)) return 92;
+
+  // 6. Any Wide/Baggy Bottom
+  if (isWideOrBaggy) return 90;
+
+  return 82;
 }
 
 // ─── Sandwich Rule ────────────────────────────────────────────────────────────
@@ -557,25 +566,76 @@ class OutfitService {
 
     for (const top of tops) {
       for (const bottom of bottoms) {
-        // Select matching shoes without mutating the footwears array
-        const shoes =
-          footwears.length > 0
-            ? footwears.reduce(
-                (best, s) =>
-                  colorScore(s.color, bottom.color) > colorScore(best.color, bottom.color) ? s : best,
-                footwears[0],
-              )
-            : undefined;
+        // Enforce gender coherence: never pair men-only top with women-only bottom or vice-versa
+        if (
+          top.gender &&
+          bottom.gender &&
+          top.gender !== 'unisex' &&
+          bottom.gender !== 'unisex' &&
+          top.gender !== bottom.gender
+        ) {
+          continue;
+        }
 
-        // Select matching outerwear without mutating the outerwears array
-        const outer =
-          needOuter && outerwears.length > 0
-            ? outerwears.reduce(
-                (best, o) =>
-                  colorScore(o.color, top.color) > colorScore(best.color, top.color) ? o : best,
-                outerwears[0],
-              )
-            : undefined;
+        // Find the absolute best shoe for THIS (top, bottom) combination
+        let bestShoe: WardrobeItem | undefined = undefined;
+        let bestShoeScore = -1;
+
+        for (const s of footwears) {
+          // Check gender compatibility for shoe
+          if (
+            (top.gender && top.gender !== 'unisex' && s.gender && s.gender !== 'unisex' && s.gender !== top.gender) ||
+            (bottom.gender && bottom.gender !== 'unisex' && s.gender && s.gender !== 'unisex' && s.gender !== bottom.gender)
+          ) {
+            continue;
+          }
+
+          let sScore = 70;
+          // Sandwich rule bonus (+20 if shoe matches top color or has strong contrast with bottom)
+          if (sandwichScore(top, bottom, s) === 100) sScore += 20;
+          // Archetype synergy (+15)
+          if (criteria.archetype && s.archetype === criteria.archetype) sScore += 15;
+          // Occasion match (+10)
+          if (s.occasions.includes(criteria.occasion)) sScore += 10;
+          // Color harmony with bottom
+          sScore += (colorScore(s.color, bottom.color) - 50) * 0.2;
+
+          if (sScore > bestShoeScore) {
+            bestShoeScore = sScore;
+            bestShoe = s;
+          }
+        }
+
+        // If no shoe found with gender check, fallback to first available
+        const shoes = bestShoe || (footwears.length > 0 ? footwears[0] : undefined);
+
+        // Find the absolute best outerwear for this outfit (if needed)
+        let outer: WardrobeItem | undefined = undefined;
+        if (needOuter && outerwears.length > 0) {
+          let bestOuter: WardrobeItem | undefined = undefined;
+          let bestOuterScore = -1;
+          for (const o of outerwears) {
+            if (
+              top.gender &&
+              top.gender !== 'unisex' &&
+              o.gender &&
+              o.gender !== 'unisex' &&
+              o.gender !== top.gender
+            ) {
+              continue;
+            }
+
+            let oScore = colorScore(o.color, top.color);
+            if (criteria.archetype && o.archetype === criteria.archetype) oScore += 15;
+            if (o.occasions.includes(criteria.occasion)) oScore += 10;
+
+            if (oScore > bestOuterScore) {
+              bestOuterScore = oScore;
+              bestOuter = o;
+            }
+          }
+          outer = bestOuter || outerwears[0];
+        }
 
         // Score the complete outfit with the exact selected items
         const score = scoreOutfit(top, bottom, shoes, outer, criteria);
@@ -607,10 +667,10 @@ class OutfitService {
       }
     }
 
-    // Fallback: relax deduplication if strict pass didn't produce 2+ results
-    if (best.length < 2 && combos.length >= 2) {
+    // Fallback: relax deduplication if strict pass didn't produce 3 results
+    if (best.length < 3 && combos.length >= 3) {
       for (const combo of combos) {
-        if (best.length >= 2) break;
+        if (best.length >= 3) break;
         if (!best.find((b) => b.top.id === combo.top.id && b.bottom.id === combo.bottom.id)) {
           best.push(combo);
         }
@@ -618,7 +678,13 @@ class OutfitService {
     }
 
     const recommendations: OutfitRecommendation[] = best.map((combo, idx) => {
-      const acc = accessories.length > 0 ? accessories[idx % accessories.length] : undefined;
+      // Find matching accessory based on archetype and aesthetic vibe
+      const acc =
+        accessories.find((a) => {
+          if (criteria.archetype && a.archetype === criteria.archetype) return true;
+          if (combo.top.archetype && a.archetype === combo.top.archetype) return true;
+          return false;
+        }) || (accessories.length > 0 ? accessories[idx % accessories.length] : undefined);
 
       // Preserve the exact items used to calculate this combination's compatibility score
       const items = [combo.top, combo.bottom, combo.outer, combo.shoes, acc].filter(

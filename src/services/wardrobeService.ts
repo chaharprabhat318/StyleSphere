@@ -1,5 +1,5 @@
 import type { WardrobeItem, WardrobeFilterOptions } from '../types/wardrobe';
-import { INITIAL_WARDROBE } from '../data/mockWardrobe';
+import { INITIAL_WARDROBE, CURATED_SAMPLE_WARDROBE } from '../data/mockWardrobe';
 
 const LEGACY_STORAGE_KEYS = [
   'stylesphere_wardrobe_items_v1',
@@ -7,9 +7,16 @@ const LEGACY_STORAGE_KEYS = [
   'stylesphere_wardrobe_items_v3',
   'stylesphere_wardrobe_items_v3_trending',
   'stylesphere_wardrobe_items',
+  'stylesphere_wardrobe_trending_2026_v4',
+  'stylesphere_wardrobe_trending_2026_v5_pro',
+  'stylesphere_wardrobe_user_v6',
+  'stylesphere_wardrobe_bottoms_v8_fresh',
+  'stylesphere_wardrobe_official_bottoms_v9',
+  'stylesphere_wardrobe_official_bottoms_v10',
+  'stylesphere_wardrobe_complete_v11',
 ];
 
-const STORAGE_KEY = 'stylesphere_wardrobe_trending_2026_v4';
+const STORAGE_KEY = 'stylesphere_wardrobe_complete_v12';
 
 // Base API configuration for Member 3's FastAPI backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -18,7 +25,7 @@ class WardrobeService {
   private memoryCache: WardrobeItem[] | null = null;
 
   private getStoredItems(): WardrobeItem[] {
-    if (this.memoryCache && this.memoryCache.length > 0) {
+    if (this.memoryCache !== null) {
       return this.memoryCache;
     }
 
@@ -42,28 +49,6 @@ class WardrobeService {
       }
 
       const parsed: WardrobeItem[] = JSON.parse(stored);
-
-      // Verify stored items are indeed the new trending pieces (not old selvedge/biker jacket data)
-      const hasOldLegacyItems = parsed.some(
-        (p) =>
-          p.id === 'item-1' ||
-          p.id === 'item-2' ||
-          p.id === 'item-3' ||
-          p.name.includes('Selvedge Denim') ||
-          p.name.includes('Straight-Leg Selvedge') ||
-          p.name.includes('Supima Tee')
-      );
-
-      const hasNewTrendingItems = parsed.some((p) => p.id === 'item-top-1');
-
-      if (hasOldLegacyItems || !hasNewTrendingItems) {
-        this.memoryCache = [...INITIAL_WARDROBE];
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_WARDROBE));
-        } catch (e) {}
-        return this.memoryCache;
-      }
-
       this.memoryCache = parsed;
       return parsed;
     } catch (e) {
@@ -240,9 +225,22 @@ class WardrobeService {
     });
   }
 
+  async clearWardrobe(): Promise<WardrobeItem[]> {
+    this.memoryCache = [];
+    this.saveStoredItems([]);
+    return [];
+  }
+
+  async loadSampleWardrobe(): Promise<WardrobeItem[]> {
+    this.memoryCache = [...CURATED_SAMPLE_WARDROBE];
+    this.saveStoredItems(this.memoryCache);
+    return this.memoryCache;
+  }
+
   async resetToDefault(): Promise<WardrobeItem[]> {
-    this.saveStoredItems(INITIAL_WARDROBE);
-    return INITIAL_WARDROBE;
+    this.memoryCache = [...INITIAL_WARDROBE];
+    this.saveStoredItems(this.memoryCache);
+    return this.memoryCache;
   }
 }
 

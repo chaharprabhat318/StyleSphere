@@ -786,29 +786,45 @@ export const RecommendationsPage: React.FC = () => {
                 </div>
 
                 {/* Synthesis Action Button */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3">
-                  <button
-                    onClick={() => setWizardStep(3)}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer w-full sm:w-auto justify-center"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to Climate</span>
-                  </button>
+                <div className="space-y-3 pt-3">
+                  {(topsInPool === 0 || bottomsInPool === 0) && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2">
+                      <span className="font-medium">
+                        Your wardrobe currently has no tops or bottoms. Catalog pieces in My Wardrobe or load sample pieces to generate outfits.
+                      </span>
+                      <button
+                        onClick={() => navigate('/wardrobe')}
+                        className="px-3 py-1 bg-amber-700 text-white rounded-lg text-[11px] font-bold shrink-0 hover:bg-amber-800 cursor-pointer"
+                      >
+                        Go to Wardrobe
+                      </button>
+                    </div>
+                  )}
 
-                  <button
-                    onClick={handleGenerateOutfits}
-                    disabled={isGenerating || topsInPool === 0 || bottomsInPool === 0}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#0a1124] hover:bg-[#0e244d] text-white text-xs font-bold font-sans-clean transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50 active:scale-98"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                    <span>
-                      {isGenerating
-                        ? 'Synthesizing Neural Outfits...'
-                        : hasGenerated
-                        ? 'Re-synthesize AI Outfits'
-                        : 'Generate AI Outfits'}
-                    </span>
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <button
+                      onClick={() => setWizardStep(3)}
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer w-full sm:w-auto justify-center"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to Climate</span>
+                    </button>
+
+                    <button
+                      onClick={handleGenerateOutfits}
+                      disabled={isGenerating || topsInPool === 0 || bottomsInPool === 0}
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#0a1124] hover:bg-[#0e244d] text-white text-xs font-bold font-sans-clean transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50 active:scale-98"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                      <span>
+                        {isGenerating
+                          ? 'Synthesizing Neural Outfits...'
+                          : hasGenerated
+                          ? 'Re-synthesize AI Outfits'
+                          : 'Generate AI Outfits'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

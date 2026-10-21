@@ -85,7 +85,7 @@ export const ClothingCard: React.FC<ClothingCardProps> = ({
       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
         <div>
           <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
-            <span className="uppercase tracking-wider font-bold text-[#132d5e]">{item.brand || 'Atelier'}</span>
+            <span className="uppercase tracking-wider font-bold text-[#132d5e]">{item.subCategory || item.category}</span>
             <span className="capitalize">{item.style}</span>
           </div>
           <h4 className="font-editorial text-sm text-slate-900 font-normal line-clamp-1 group-hover:text-[#132d5e] transition-colors">

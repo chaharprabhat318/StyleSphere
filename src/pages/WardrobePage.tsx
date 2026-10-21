@@ -59,7 +59,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
               </div>
 
               <h3 className="font-editorial text-xl text-slate-900 font-normal">{item.name}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">{item.brand || 'Private Collection'}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{item.subCategory || 'Contemporary Piece'}</p>
 
               <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-500">
@@ -223,7 +223,21 @@ export const WardrobePage: React.FC = () => {
   };
 
   const handleReset = async () => {
-    await wardrobeService.resetToDefault();
+    await wardrobeService.clearWardrobe();
+    loadData();
+    context?.refreshItems?.();
+  };
+
+  const handleClearWardrobe = async () => {
+    if (confirm('Are you sure you want to completely empty your wardrobe?')) {
+      await wardrobeService.clearWardrobe();
+      loadData();
+      context?.refreshItems?.();
+    }
+  };
+
+  const handleLoadSample = async () => {
+    await wardrobeService.loadSampleWardrobe();
     loadData();
     context?.refreshItems?.();
   };
@@ -269,6 +283,8 @@ export const WardrobePage: React.FC = () => {
         categoryCounts={categoryCounts}
         onFilterChange={(updates) => setFilters((prev) => ({ ...prev, ...updates }))}
         onResetWardrobe={handleReset}
+        onClearWardrobe={handleClearWardrobe}
+        onLoadSample={handleLoadSample}
       />
 
       {/* Clothing Grid */}
@@ -292,12 +308,31 @@ export const WardrobePage: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="p-16 text-center rounded-3xl border border-dashed border-slate-200 bg-white/80 shadow-xs">
-          <Shirt className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-          <h4 className="font-editorial text-lg text-slate-800 font-normal">No pieces found</h4>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto font-sans-clean">
-            No garments match the current category or search filter.
-          </p>
+        <div className="p-16 text-center rounded-3xl border border-dashed border-slate-300 bg-white/90 shadow-sm space-y-4">
+          <div className="w-14 h-14 rounded-3xl bg-blue-50 text-[#0e244d] flex items-center justify-center mx-auto">
+            <Shirt className="w-7 h-7" />
+          </div>
+          <div>
+            <h4 className="font-editorial text-xl text-slate-800 font-bold">Your Wardrobe is Empty</h4>
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto font-sans-clean leading-relaxed">
+              Wardrobe is completely clean with 0 pieces. Catalog garments piece by piece, or load the curated 48-piece capsule collection anytime.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => context?.openUpload?.()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0e244d] text-white hover:bg-[#15346d] border border-[#1e3a8a] transition-all font-semibold text-xs tracking-wide cursor-pointer shadow-sm active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Catalog New Piece</span>
+            </button>
+            <button
+              onClick={handleLoadSample}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all font-semibold text-xs tracking-wide cursor-pointer shadow-xs active:scale-95"
+            >
+              <span>Load Trendy Bottoms</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

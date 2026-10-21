@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { WardrobeItem } from '../types/wardrobe';
 import { wardrobeService } from '../services/wardrobeService';
+import { CURATED_SAMPLE_WARDROBE } from '../data/mockWardrobe';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,39 +32,35 @@ export const DashboardPage: React.FC = () => {
   const outerCount = items.filter((i) => i.category === 'outerwear').length;
   const shoesCount = items.filter((i) => i.category === 'footwear').length;
 
-  // Trending Outfit Presets (2025/2026 Golden Proportion: Cropped/Slim Top + Baggy/Wide Bottom)
+  const displayItems = items.length > 0 ? items : CURATED_SAMPLE_WARDROBE;
+
+  // Trending Fit Highlights (Off Duty, Bonkers & H&M Silhouettes)
   const trendingOutfits = [
     {
       id: 'trend-1',
-      title: 'Boxy Cropped Streetwear Ensemble',
+      title: 'Ultra-Baggy Puddle Skater Fit',
       occasion: 'Campus & Street',
       harmony: 99,
       pieces: [
-        items.find((i) => i.id === 'item-top-1') || items.find((i) => i.category === 'tops') || items[0],
-        items.find((i) => i.id === 'item-bot-1') || items.find((i) => i.category === 'bottoms') || items[1],
-        items.find((i) => i.id === 'item-foot-1') || items.find((i) => i.category === 'footwear') || items[2],
+        displayItems.find((i) => i.id === 'bottom-m-1') || displayItems[0],
       ].filter(Boolean) as WardrobeItem[],
     },
     {
       id: 'trend-2',
-      title: 'Modern Clean Fit Golden Proportion',
+      title: 'Folded Waistband Wide-Leg Denim',
       occasion: 'Downtown & Coffee',
-      harmony: 96,
+      harmony: 98,
       pieces: [
-        items.find((i) => i.id === 'item-top-3') || items.find((i) => i.category === 'tops') || items[0],
-        items.find((i) => i.id === 'item-bot-2') || items.find((i) => i.category === 'bottoms') || items[1],
-        items.find((i) => i.id === 'item-foot-2') || items.find((i) => i.category === 'footwear') || items[2],
+        displayItems.find((i) => i.id === 'bottom-w-1') || displayItems[1],
       ].filter(Boolean) as WardrobeItem[],
     },
     {
       id: 'trend-3',
-      title: 'Old Money Tailored Silhouette',
+      title: 'Double-Pleated Wide-Leg Fluid Slacks',
       occasion: 'Dinner & Date',
-      harmony: 94,
+      harmony: 96,
       pieces: [
-        items.find((i) => i.id === 'item-top-4') || items.find((i) => i.category === 'tops') || items[0],
-        items.find((i) => i.id === 'item-bot-4') || items.find((i) => i.category === 'bottoms') || items[1],
-        items.find((i) => i.id === 'item-foot-3') || items.find((i) => i.category === 'footwear') || items[2],
+        displayItems.find((i) => i.id === 'bottom-m-5') || displayItems[2],
       ].filter(Boolean) as WardrobeItem[],
     },
   ];
@@ -249,10 +246,10 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* 3-Piece Mini Collage */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* Piece Mini Showcase */}
+              <div className={`grid gap-2 ${ensemble.pieces.length > 1 ? 'grid-cols-3' : 'grid-cols-1'}`}>
                 {ensemble.pieces.map((p, idx) => (
-                  <div key={idx} className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-100">
+                  <div key={idx} className={`${ensemble.pieces.length > 1 ? 'aspect-[3/4]' : 'aspect-[16/10]'} rounded-xl overflow-hidden bg-slate-100`}>
                     <img
                       src={p.imageUrl}
                       alt={p.name}
