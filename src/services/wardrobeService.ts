@@ -14,9 +14,12 @@ const LEGACY_STORAGE_KEYS = [
   'stylesphere_wardrobe_official_bottoms_v9',
   'stylesphere_wardrobe_official_bottoms_v10',
   'stylesphere_wardrobe_complete_v11',
+  'stylesphere_wardrobe_complete_v12',
+  'stylesphere_wardrobe_v13_watches_uniqlo',
+  'stylesphere_wardrobe_v14_accessories',
 ];
 
-const STORAGE_KEY = 'stylesphere_wardrobe_complete_v12';
+const STORAGE_KEY = 'stylesphere_wardrobe_v15_footwear';
 
 // Base API configuration for Member 3's FastAPI backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';

@@ -912,7 +912,17 @@ export const RecommendationsPage: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  {/* Generate New Outfit — instant re-roll */}
+                  <button
+                    onClick={handleGenerateOutfits}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#0e244d] to-[#1a3a6e] hover:from-[#132d5e] hover:to-[#1e4080] text-white text-xs font-bold transition-all shadow-sm cursor-pointer border border-[#1e3a8a] disabled:opacity-60"
+                  >
+                    <Shuffle className={`w-3.5 h-3.5 text-blue-300 ${isGenerating ? 'animate-spin' : ''}`} />
+                    <span>{isGenerating ? 'Generating...' : 'Generate New Outfit'}</span>
+                  </button>
+
                   <button
                     onClick={handleSaveActiveOutfit}
                     disabled={savedSuccess}

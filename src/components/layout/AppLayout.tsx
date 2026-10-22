@@ -8,6 +8,7 @@ import { wardrobeService } from '../../services/wardrobeService';
 export const AppLayout: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [totalCount, setTotalCount] = useState(20);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
   const fetchCount = async () => {
@@ -63,7 +64,7 @@ export const AppLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-900 flex">
       {/* Fixed Sidebar */}
-      <Sidebar totalItemsCount={totalCount} />
+      <Sidebar totalItemsCount={totalCount} isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(prev => !prev)} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">

@@ -22,37 +22,40 @@ export interface HistoryEntry {
 }
 
 // ─── Coverage Warning ─────────────────────────────────────────────────────────
-// Only emitted when actual wardrobe metadata confirms a gap between what was
-// requested and what the wardrobe contains. Does NOT claim fallback logic is
-// active unless the engine actually implements it.
 export interface CoverageWarning {
   type: 'archetype' | 'style' | 'occasion' | 'weather';
   message: string;
 }
 
-// ─── Color Compatibility Matrix ───────────────────────────────────────────────
+// ─── Modern Color Harmony & Compatibility Matrix ─────────────────────────────
 const COLOR_COMPAT: Record<string, string[]> = {
-  white:    ['black', 'navy', 'blue', 'grey', 'beige', 'khaki', 'charcoal', 'brown', 'olive', 'green', 'sage', 'cream', 'oatmeal'],
-  black:    ['white', 'grey', 'charcoal', 'beige', 'cream', 'navy', 'red', 'khaki', 'brown', 'camel'],
-  grey:     ['white', 'black', 'charcoal', 'navy', 'blue', 'beige', 'burgundy'],
-  charcoal: ['white', 'light blue', 'beige', 'cream', 'camel', 'brown', 'burgundy'],
-  navy:     ['white', 'beige', 'grey', 'khaki', 'camel', 'light blue', 'cream', 'oatmeal'],
-  blue:     ['white', 'navy', 'grey', 'beige', 'khaki', 'brown', 'camel'],
-  beige:    ['white', 'black', 'navy', 'brown', 'camel', 'olive', 'khaki', 'charcoal'],
-  brown:    ['beige', 'khaki', 'white', 'camel', 'navy', 'olive', 'cream'],
-  camel:    ['white', 'black', 'navy', 'grey', 'brown', 'charcoal', 'beige'],
-  khaki:    ['white', 'navy', 'brown', 'beige', 'olive', 'black'],
-  olive:    ['white', 'black', 'khaki', 'beige', 'brown', 'navy', 'cream'],
+  white:    ['black', 'navy', 'blue', 'grey', 'beige', 'khaki', 'charcoal', 'brown', 'olive', 'green', 'sage', 'cream', 'oatmeal', 'terracotta', 'lavender', 'rose', 'slate', 'taupe'],
+  black:    ['white', 'grey', 'charcoal', 'beige', 'cream', 'navy', 'red', 'khaki', 'brown', 'camel', 'silver', 'gold', 'olive', 'blue', 'taupe', 'sand'],
+  grey:     ['white', 'black', 'charcoal', 'navy', 'blue', 'beige', 'burgundy', 'silver', 'slate', 'cream'],
+  charcoal: ['white', 'light blue', 'beige', 'cream', 'camel', 'brown', 'burgundy', 'grey', 'black', 'silver'],
+  navy:     ['white', 'beige', 'grey', 'khaki', 'camel', 'light blue', 'cream', 'oatmeal', 'silver', 'gold'],
+  blue:     ['white', 'navy', 'grey', 'beige', 'khaki', 'brown', 'camel', 'cream'],
+  beige:    ['white', 'black', 'navy', 'brown', 'camel', 'olive', 'khaki', 'charcoal', 'cream', 'taupe', 'gold'],
+  brown:    ['beige', 'khaki', 'white', 'camel', 'navy', 'olive', 'cream', 'black', 'gold'],
+  camel:    ['white', 'black', 'navy', 'grey', 'brown', 'charcoal', 'beige', 'cream'],
+  khaki:    ['white', 'navy', 'brown', 'beige', 'olive', 'black', 'cream'],
+  olive:    ['white', 'black', 'khaki', 'beige', 'brown', 'navy', 'cream', 'orange', 'gold'],
   green:    ['white', 'beige', 'khaki', 'brown', 'navy', 'black', 'cream'],
-  sage:     ['white', 'beige', 'black', 'brown', 'khaki', 'grey', 'cream'],
-  cream:    ['black', 'navy', 'brown', 'olive', 'khaki', 'charcoal', 'beige'],
+  sage:     ['white', 'beige', 'black', 'brown', 'khaki', 'grey', 'cream', 'olive'],
+  cream:    ['black', 'navy', 'brown', 'olive', 'khaki', 'charcoal', 'beige', 'blue', 'terracotta', 'gold', 'white'],
   oatmeal:  ['black', 'navy', 'brown', 'olive', 'charcoal', 'beige'],
-  burgundy: ['beige', 'grey', 'charcoal', 'navy', 'white', 'black', 'khaki'],
+  burgundy: ['beige', 'grey', 'charcoal', 'navy', 'white', 'black', 'khaki', 'gold'],
   red:      ['black', 'white', 'navy', 'grey'],
+  gold:     ['black', 'white', 'navy', 'beige', 'cream', 'brown', 'olive', 'burgundy'],
+  silver:   ['black', 'white', 'grey', 'charcoal', 'navy', 'blue', 'slate'],
+  orange:   ['black', 'white', 'grey', 'navy', 'olive', 'khaki'],
+  rose:     ['white', 'grey', 'beige', 'cream', 'black', 'navy'],
+  taupe:    ['white', 'black', 'cream', 'beige', 'brown', 'navy'],
+  slate:    ['white', 'black', 'grey', 'navy', 'silver'],
 };
 
 function normalizeColor(color: string): string {
-  return color.toLowerCase()
+  return (color || '').toLowerCase()
     .replace('vintage ', '')
     .replace('washed ', '')
     .replace('chalk ', '')
@@ -79,63 +82,87 @@ function normalizeColor(color: string): string {
     .replace('tortoise', 'brown')
     .replace('silver & white', 'white')
     .replace('white & black', 'white')
+    .replace('gold & steel', 'gold')
+    .replace('two-tone gold', 'gold')
     .trim();
 }
 
 function colorScore(c1: string, c2: string): number {
   const n1 = normalizeColor(c1);
   const n2 = normalizeColor(c2);
-  if (n1 === n2) return 70; // Monochromatic — valid but less interesting than a contrast
+  if (n1 === n2) return 85; // Monochromatic look
   const compatList = COLOR_COMPAT[n1] || [];
-  if (compatList.includes(n2)) return 100;
+  if (compatList.some((c) => n2.includes(c))) return 100;
   const compatList2 = COLOR_COMPAT[n2] || [];
-  if (compatList2.includes(n1)) return 100;
-  return 55; // No established compatibility — penalises but does not eliminate
+  if (compatList2.some((c) => n1.includes(c))) return 100;
+  return 60;
 }
 
-// ─── Modern 2025/2026 Trend Silhouette & Proportion Engine ───────────────────
+// ─── 2025/2026 Golden Proportion & Silhouette Rule ───────────────────────────
 function silhouetteScore(top: WardrobeItem, bottom: WardrobeItem): number {
   const topText = `${top.name} ${top.subCategory || ''}`.toLowerCase();
   const bottomText = `${bottom.name} ${bottom.subCategory || ''}`.toLowerCase();
 
   const isCropped =
-    top.fit === 'cropped' || topText.includes('cropped') || topText.includes('baby tee');
+    top.fit === 'cropped' ||
+    topText.includes('cropped') ||
+    topText.includes('baby tee') ||
+    topText.includes('corset');
   const isOversizedOrBoxy =
-    top.fit === 'boxy' || top.fit === 'relaxed' || topText.includes('oversized') || topText.includes('boxy');
+    top.fit === 'boxy' ||
+    top.fit === 'relaxed' ||
+    topText.includes('oversized') ||
+    topText.includes('boxy');
+  const isSleekOrFitted =
+    top.fit === 'sleek' ||
+    top.fit === 'slim' ||
+    topText.includes('fitted') ||
+    topText.includes('ribbed');
 
   const isWideOrBaggy =
-    bottom.fit === 'wide-leg' || bottom.fit === 'baggy' ||
-    bottomText.includes('wide') || bottomText.includes('baggy') || bottomText.includes('puddle');
+    bottom.fit === 'wide-leg' ||
+    bottom.fit === 'baggy' ||
+    bottomText.includes('wide') ||
+    bottomText.includes('baggy') ||
+    bottomText.includes('puddle');
   const isBootcut =
-    bottom.fit === 'bootcut' || bottomText.includes('bootcut') || bottomText.includes('flare');
-  const isStraight =
-    bottom.fit === 'straight' || bottomText.includes('straight');
+    bottom.fit === 'bootcut' ||
+    bottomText.includes('bootcut') ||
+    bottomText.includes('flare');
+  const isStraightOrPleated =
+    bottom.fit === 'straight' ||
+    bottomText.includes('straight') ||
+    bottomText.includes('pleated') ||
+    bottomText.includes('tailored');
 
-  // Hard penalty for skinny jeans (user directive)
+  // Hard penalty for skinny cuts
   if (bottomText.includes('skinny')) return 15;
 
-  // 1. Cropped Top + Wide-Leg / Baggy Bottom (Peak 2025/2026 Golden Proportion: 1/3 Upper, 2/3 Lower)
+  // 1. Cropped Top + Wide-Leg / Baggy Bottom (Golden 1:2 Ratio)
   if (isCropped && isWideOrBaggy) return 100;
 
-  // 2. Cropped Top + Bootcut / Flare Bottom (Peak Y2K / 90s Runway aesthetic)
+  // 2. Cropped Top + Bootcut / Flare (Y2K / 90s Runway)
   if (isCropped && isBootcut) return 98;
 
-  // 3. Cropped Top + Straight-Leg Bottom (Timeless Clean Fit / Parisian Minimal)
-  if (isCropped && isStraight) return 94;
-
-  // 4. Oversized Boxy Top + Baggy / Wide-Leg Bottom (Peak Tokyo/Seoul Streetwear Silhouette)
+  // 3. Oversized Boxy Top + Baggy / Puddle Bottom (Tokyo/Seoul Streetwear Drape)
   if (isOversizedOrBoxy && isWideOrBaggy) return 96;
 
-  // 5. Oversized Top + Relaxed Straight / Bootcut Bottom
-  if (isOversizedOrBoxy && (isStraight || isBootcut)) return 92;
+  // 4. Sleek/Fitted Top + Wide-Leg Bottom (Clean Parisian Silhouette)
+  if (isSleekOrFitted && isWideOrBaggy) return 95;
 
-  // 6. Any Wide/Baggy Bottom
-  if (isWideOrBaggy) return 90;
+  // 5. Sleek/Fitted Top + Straight/Pleated Bottom (Old Money Tailored Poise)
+  if (isSleekOrFitted && isStraightOrPleated) return 94;
 
-  return 82;
+  // 6. Oversized Boxy Top + Straight/Bootcut Bottom
+  if (isOversizedOrBoxy && (isStraightOrPleated || isBootcut)) return 92;
+
+  // 7. General wide-leg pairing
+  if (isWideOrBaggy) return 88;
+
+  return 80;
 }
 
-// ─── Sandwich Rule ────────────────────────────────────────────────────────────
+// ─── Sandwich Rule: Top & Shoe Color Mirroring ────────────────────────────────
 function sandwichScore(
   top: WardrobeItem,
   bottom: WardrobeItem,
@@ -145,8 +172,10 @@ function sandwichScore(
   const topColor = normalizeColor(top.color);
   const shoeColor = normalizeColor(shoes.color);
   const bottomColor = normalizeColor(bottom.color);
+
+  // If top and shoes share dominant color family while contrasting with pants
   if (
-    (topColor === shoeColor || colorScore(top.color, shoes.color) >= 80) &&
+    (topColor === shoeColor || colorScore(top.color, shoes.color) >= 85) &&
     topColor !== bottomColor
   ) {
     return 100;
@@ -154,34 +183,28 @@ function sandwichScore(
   return 75;
 }
 
-// ─── Archetype Synergy ────────────────────────────────────────────────────────
+// ─── Archetype & Occasion Scoring ─────────────────────────────────────────────
 function archetypeSynergy(item: WardrobeItem, requestedArchetype?: FashionArchetype): number {
   if (!requestedArchetype) return 80;
   if (item.archetype === requestedArchetype) return 100;
-  return 70; // Honest mismatch penalty — not fabricated compatibility
+  return 35; // Distinct penalty for mismatching requested archetype
 }
 
-// ─── Style Compatibility ──────────────────────────────────────────────────────
 const STYLE_COMPAT: Record<StyleVibe, StyleVibe[]> = {
-  'minimal':      ['minimal', 'smart casual', 'classic'],
-  'streetwear':   ['streetwear', 'sporty', 'casual' as StyleVibe],
+  minimal:        ['minimal', 'smart casual', 'classic'],
+  streetwear:     ['streetwear', 'sporty', 'casual' as StyleVibe],
   'smart casual': ['smart casual', 'minimal', 'classic'],
-  'classic':      ['classic', 'smart casual', 'minimal'],
-  'sporty':       ['sporty', 'streetwear'],
-  'cozy':         ['cozy', 'minimal', 'casual' as StyleVibe],
+  classic:        ['classic', 'smart casual', 'minimal'],
+  sporty:         ['sporty', 'streetwear'],
+  cozy:           ['cozy', 'minimal', 'casual' as StyleVibe],
 };
 
 function styleScore(s1: StyleVibe, s2: StyleVibe): number {
   const compat = STYLE_COMPAT[s1] || [];
-  return compat.includes(s2) ? 100 : 65;
+  return compat.includes(s2) ? 100 : 50;
 }
 
 // ─── Season / Weather Compatibility ──────────────────────────────────────────
-// Compatibility table: how appropriate is this item's season tag for each
-// weather condition? 0–100. All-season items always return 100.
-// Items with no season tag return 85 (treated as versatile but not guaranteed).
-// This is used as a SCORING COMPONENT, not a hard filter — items with poor
-// season compatibility score lower but are not excluded from consideration.
 const SEASON_WEATHER_COMPAT: Record<string, Record<string, number>> = {
   spring: { warm: 80, mild: 95, cold: 30, rainy: 70 },
   summer: { warm: 100, mild: 65, cold: 10, rainy: 50 },
@@ -197,9 +220,6 @@ function seasonCompatibilityScore(
   return SEASON_WEATHER_COMPAT[item.season]?.[weather] ?? 85;
 }
 
-// ─── Preferred Color Presence ─────────────────────────────────────────────────
-// Scores 100 if ≥2 combo items carry the preferred color, 80 for 1 match,
-// 65 for no match. Only applied when a specific color anchor is selected.
 function preferredColorBoost(items: WardrobeItem[], preferredColor: string): number {
   const target = preferredColor.toLowerCase();
   const matchCount = items.filter((item) => {
@@ -207,14 +227,11 @@ function preferredColorBoost(items: WardrobeItem[], preferredColor: string): num
     return nc === target || nc.includes(target);
   }).length;
   if (matchCount >= 2) return 100;
-  if (matchCount === 1) return 80;
-  return 65;
+  if (matchCount === 1) return 85;
+  return 40;
 }
 
-// ─── Main Scoring Function ────────────────────────────────────────────────────
-// All components are individually normalized to 0–100.
-// Final score = true weighted average of all included components.
-// No artificial floor or ceiling is applied.
+// ─── Master Scoring Function (User Intent-First Weighted Formulation) ─────────
 function scoreOutfit(
   top: WardrobeItem,
   bottom: WardrobeItem,
@@ -230,50 +247,47 @@ function scoreOutfit(
     totalWeight += weight;
   };
 
-  // 1. Color harmony (top + bottom)
-  add(colorScore(top.color, bottom.color), 1.2);
+  // 1. OCCASION MATCH (Weight 2.5) — Primary Driver
+  const topOcc = top.occasions.includes(criteria.occasion) ? 100 : 30;
+  const botOcc = bottom.occasions.includes(criteria.occasion) ? 100 : 30;
+  const shoeOcc = shoes ? (shoes.occasions.includes(criteria.occasion) ? 100 : 40) : 75;
+  const occAvg = (topOcc + botOcc + shoeOcc) / 3;
+  add(occAvg, 2.5);
 
-  // 2. Silhouette proportions (2025/2026 golden proportion rule)
+  // 2. ARCHETYPE SYNERGY (Weight 2.5) — Critical Aesthetic Driver
+  if (criteria.archetype) {
+    const topArch = archetypeSynergy(top, criteria.archetype);
+    const botArch = archetypeSynergy(bottom, criteria.archetype);
+    const shoeArch = shoes ? archetypeSynergy(shoes, criteria.archetype) : 80;
+    const archAvg = (topArch * 1.2 + botArch * 1.2 + shoeArch * 0.6) / 3;
+    add(archAvg, 2.5);
+  }
+
+  // 3. STYLE VIBE MATCH (Weight 1.8)
+  const topStyleScore = top.style === criteria.style ? 100 : styleScore(top.style, criteria.style);
+  const botStyleScore = bottom.style === criteria.style ? 100 : styleScore(bottom.style, criteria.style);
+  add((topStyleScore + botStyleScore) / 2, 1.8);
+
+  // 4. SILHOUETTE & PROPORTION (Weight 1.5)
   add(silhouetteScore(top, bottom), 1.5);
 
-  // 3. Sandwich rule (shoes vs outfit balance)
+  // 5. COLOR HARMONY (Weight 1.2)
+  add(colorScore(top.color, bottom.color), 1.2);
+
+  // 6. SANDWICH RULE (Weight 1.0)
   if (shoes) {
     add(sandwichScore(top, bottom, shoes), 1.0);
   }
 
-  // 4. Style vibe coherence
-  add(styleScore(top.style, bottom.style), 0.8);
-
-  // 5. Archetype coherence — only scored when archetype was explicitly requested.
-  //    archetypeSynergy returns 80 (neutral) when no archetype is requested,
-  //    so this block is gated to avoid silently inflating scores.
-  if (criteria.archetype) {
-    const archAvg =
-      (archetypeSynergy(top, criteria.archetype) +
-        archetypeSynergy(bottom, criteria.archetype)) /
-      2;
-    add(archAvg, 1.3);
+  // 7. PREFERRED COLOR BOOST (Weight 1.5 when requested)
+  if (criteria.preferredColor && criteria.preferredColor !== 'all') {
+    const comboItems = [top, bottom, ...(shoes ? [shoes] : [])];
+    add(preferredColorBoost(comboItems, criteria.preferredColor), 1.5);
   }
 
-  // 6. Occasion suitability — normalised fraction of key items tagged for the occasion.
-  //    Replaces the previous flat +12 bonus per item, which was not normalised.
-  const occasionPool = [top, bottom, ...(shoes ? [shoes] : [])] as WardrobeItem[];
-  const occasionMatches = occasionPool.filter((i) =>
-    i.occasions.includes(criteria.occasion),
-  ).length;
-  add((occasionMatches / occasionPool.length) * 100, 1.0);
-
-  // 7. Outerwear colour harmony (when included)
-  if (outer) {
-    add(colorScore(outer.color, top.color), 0.7);
-  }
-
-  // 8. Season / weather compatibility — scored as a continuous component, not a
-  //    binary filter. All-season items score 100; seasonal items score based on
-  //    the SEASON_WEATHER_COMPAT table. Outfits with poorly matched season tags
-  //    naturally rank lower without being excluded entirely.
+  // 8. WEATHER COMPATIBILITY (Weight 0.8 when requested)
   if (criteria.weather) {
-    const weatherPool = [top, bottom, ...(outer ? [outer] : [])] as WardrobeItem[];
+    const weatherPool = [top, bottom, ...(outer ? [outer] : [])];
     const avgSeason =
       weatherPool.reduce(
         (sum, item) => sum + seasonCompatibilityScore(item, criteria.weather!),
@@ -282,87 +296,32 @@ function scoreOutfit(
     add(avgSeason, 0.8);
   }
 
-  // 9. Preferred color presence — only added to the weighted average when the
-  //    user has selected a specific color anchor (not 'all').
-  if (criteria.preferredColor && criteria.preferredColor !== 'all') {
-    const comboItems = [
-      top,
-      bottom,
-      ...(shoes ? [shoes] : []),
-      ...(outer ? [outer] : []),
-    ] as WardrobeItem[];
-    add(preferredColorBoost(comboItems, criteria.preferredColor), 0.7);
-  }
-
-  // True weighted average — no clamp applied
-  return Math.round(weightedScore / totalWeight);
+  return Math.min(100, Math.max(10, Math.round(weightedScore / totalWeight)));
 }
 
 // ─── Coverage Warning Builder ─────────────────────────────────────────────────
-// Inspects actual wardrobe metadata against the requested criteria and emits
-// honest warnings only when the data confirms a gap.
-// - Does NOT claim "closest archetype" fallback unless it is actually implemented.
-// - Does NOT emit a weather warning unless the majority of season-tagged items
-//   are demonstrably incompatible with the selected condition.
 function buildCoverageWarnings(
   pool: WardrobeItem[],
   criteria: RecommendationCriteria,
 ): CoverageWarning[] {
   const warnings: CoverageWarning[] = [];
 
-  // Archetype coverage
   if (criteria.archetype) {
     const archetypeItems = pool.filter((i) => i.archetype === criteria.archetype);
     if (archetypeItems.length === 0) {
       warnings.push({
         type: 'archetype',
-        message: `None of your wardrobe items are tagged with the "${criteria.archetype}" archetype. Outfit scoring reflects colour harmony, silhouette proportion, and style compatibility only — archetype alignment was not a factor in these results.`,
-      });
-    } else if (archetypeItems.length === 1) {
-      warnings.push({
-        type: 'archetype',
-        message: `Only 1 wardrobe item carries the "${criteria.archetype}" archetype tag. Full archetype-matched outfits are limited; other items are scored on colour, silhouette, and style instead.`,
+        message: `None of your wardrobe items are tagged with "${criteria.archetype}". The engine prioritized occasion, silhouette proportions, and color harmony.`,
       });
     }
   }
 
-  // Style coverage
-  if (criteria.style) {
-    const styleItems = pool.filter((i) => i.style === criteria.style);
-    if (styleItems.length === 0) {
-      warnings.push({
-        type: 'style',
-        message: `No items in your wardrobe carry the "${criteria.style}" style tag. Style-compatibility rules (adjacent compatible styles) have been applied in scoring instead.`,
-      });
-    }
-  }
-
-  // Occasion coverage
   const occasionItems = pool.filter((i) => i.occasions.includes(criteria.occasion));
   if (occasionItems.length < 2) {
     warnings.push({
       type: 'occasion',
-      message: `Fewer than 2 wardrobe items are tagged for the "${criteria.occasion}" occasion. Recommendations may include pieces not specifically suited to this context — consider updating occasion tags in your wardrobe.`,
+      message: `Fewer than 2 wardrobe items are tagged for "${criteria.occasion}". Recommendations include the closest versatile alternatives.`,
     });
-  }
-
-  // Weather coverage — only warn when season-tagged items are broadly incompatible.
-  // All-season items are never considered incompatible.
-  if (criteria.weather) {
-    const seasonTaggedItems = pool.filter((i) => i.season && i.season !== 'all-season');
-    if (seasonTaggedItems.length > 0) {
-      const avgSeasonScore =
-        seasonTaggedItems.reduce(
-          (sum, i) => sum + seasonCompatibilityScore(i, criteria.weather!),
-          0,
-        ) / seasonTaggedItems.length;
-      if (avgSeasonScore < 55) {
-        warnings.push({
-          type: 'weather',
-          message: `Most season-tagged items in your wardrobe are not ideal for "${criteria.weather}" conditions. The engine has scored them accordingly and surfaced the best available options — results may not be optimally weather-appropriate.`,
-        });
-      }
-    }
   }
 
   return warnings;
@@ -378,51 +337,51 @@ function buildReasoning(
   archetype?: FashionArchetype,
 ): string {
   const silScore = silhouetteScore(top, bottom);
-  const isTrendSilhouette = silScore >= 95;
+  const isTrendSilhouette = silScore >= 94;
   const isSandwich = shoes ? sandwichScore(top, bottom, shoes) === 100 : false;
 
   let text = '';
 
   if (isTrendSilhouette) {
-    text += `Engineered with the 2025/2026 contemporary golden proportion: a structured ${top.subCategory || 'cropped top'} balanced against high-volume ${bottom.subCategory || 'wide-leg bottoms'}.`;
+    text += `Engineered with the 2025/2026 contemporary golden proportion: a structured ${top.subCategory || 'cropped upper'} balanced against high-volume ${bottom.subCategory || 'wide-leg trousers'}.`;
   } else {
-    text += `Harmoniously proportioned pairing your ${top.color} ${top.name} with ${bottom.color} ${bottom.name}.`;
+    text += `Clean color blocking pairing the ${top.color} ${top.name} with ${bottom.color} ${bottom.name}.`;
   }
 
   if (isSandwich && shoes) {
-    text += ` Styled using the Sandwich Rule — your ${top.color} upper mirrors your ${shoes.color} footwear, framing the ${bottom.color} bottoms as the clean focal contrast.`;
+    text += ` Styled using the Sandwich Rule: your ${top.color} top mirrors your ${shoes.color} footwear, framing the ${bottom.color} bottom as the focal balance.`;
   }
 
   if (archetype) {
     const archetypeMap: Record<FashionArchetype, string> = {
       'old money':     ' Curated under the Old Money aesthetic with understated quiet luxury poise, tailored pleats, and timeless heritage drape.',
-      'streetwear':    ' Infused with modern Streetwear energy, stacking heavy oversized denim puddle breaks over retro runners.',
-      'minimalist':    ' Crafted through a pure Minimalist lens — intentional boxy cuts, crisp neutral tones, and architectural restraint.',
-      'Y2K':           ' Channeling Y2K aesthetics with a nostalgic baby tee cut, flared bootcut lines, and cyber-mesh accents.',
-      'dark academia': ' Structured with Dark Academia mood, pairing collegiate double-pleated wool with rich charcoal and lug derbies.',
+      'streetwear':    ' Infused with modern Streetwear energy, stacking heavy oversized drape and raw denim breaks over hype sneakers.',
+      'minimalist':    ' Crafted through a pure Minimalist lens — intentional cuts, clean neutral tones, and architectural restraint.',
+      'Y2K':           ' Channeling Y2K aesthetics with a nostalgic baby tee cut, flared lines, and retro cyber-athletic accents.',
+      'dark academia': ' Structured with Dark Academia mood, pairing collegiate double-pleats with rich charcoal and vintage leather accents.',
       'clean fit':     ' Masterclass in the Clean Fit aesthetic — zero graphic clutter, razor-sharp proportions, and effortless modern drape.',
-      'techwear':      ' Framed with Techwear utility, pairing weather-resistant modular cargo drape with sleek stealth lines.',
-      'boho':          ' Flowing with relaxed Bohemian movement, loose airy textures, and natural tonal harmony.',
-      'vintage':       ' Rooted in mid-century Vintage authenticity with washed faded textures and classic stacked denim breaks.',
-      'luxe':          ' Engineered with high-end Luxe sophistication, delivering commanding evening polish and sculptural tailoring.',
+      'techwear':      ' Framed with Techwear utility, pairing weather-resistant cargo lines with modern athletic silhouettes.',
+      'boho':          ' Flowing with relaxed Bohemian movement, loose airy textures, and natural earthy tones.',
+      'vintage':       ' Rooted in authentic Vintage aesthetics with washed faded textures and classic terrace gum-sole breaks.',
+      'luxe':          ' Engineered with high-end Luxe sophistication, delivering commanding polish and sculptural tailoring.',
     };
     text += archetypeMap[archetype] || ` Curated specifically for the ${archetype} aesthetic.`;
   }
 
   if (shoes) {
-    text += ` The ${shoes.name} anchors the silhouette, letting the wide leg hem puddle naturally over the footwear.`;
+    text += ` Grounded by the ${shoes.name}.`;
   }
 
   if (outer) {
-    text += ` Layered with the ${outer.name} to add an architectural third-piece dimension.`;
+    text += ` Layered with the ${outer.name} for modern dimensional depth.`;
   }
 
   const occasionMap: Partial<Record<OccasionType, string>> = {
     college: 'campus rotation and study sessions',
-    casual:  'relaxed everyday city wear',
+    casual:  'relaxed everyday wear',
     date:    'an effortlessly polished date night',
-    party:   'social nightlife and evening events',
-    formal:  'elevated contemporary formal wear',
+    party:   'social nightlife and weekend events',
+    formal:  'elevated formal occasions',
     sporty:  'active street-ready utility',
   };
   text += ` Ideal for ${occasionMap[occasion] || occasion}.`;
@@ -436,13 +395,13 @@ function buildStylingTip(
   outer: WardrobeItem | undefined,
 ): string {
   const tips = [
-    `Let the ${bottom.subCategory || 'wide bottoms'} puddle and stack naturally over your sneakers for that effortless contemporary break.`,
-    `Keep the ${top.subCategory || 'cropped top'} untucked — modern styling favors the 1:2 torso-to-leg golden ratio.`,
-    `Notice the Sandwich Rule: match your sunglasses or bag tone to your shoes to frame the contrasting trousers.`,
+    `Let the ${bottom.subCategory || 'trousers'} puddle naturally over the sneakers for a relaxed, contemporary stacking break.`,
+    `Keep the ${top.subCategory || 'top'} untucked to emphasize the 1:2 torso-to-leg modern golden ratio.`,
+    `Notice the Sandwich Rule: coordinate your watch or jewelry metal with the hardware on your footwear.`,
     outer
-      ? `Wear the ${outer.subCategory || 'outerwear'} unbuttoned to create strong vertical lines against your wide-leg silhouette.`
-      : `Add a minimal silver box chain to draw focus upwards towards your neckline.`,
-    `Because the pants have generous volume, avoid bulky belts to keep the waistline seamless and clean.`,
+      ? `Wear the ${outer.subCategory || 'outerwear'} unbuttoned to form clean vertical lines against the silhouette.`
+      : `Add a vintage timepiece or fine chain to draw focus upward toward the neckline.`,
+    `Because the pants feature generous volume, keep accessories minimal to maintain a sharp, deliberate waistline.`,
   ];
   return tips[Math.floor(Math.random() * tips.length)];
 }
@@ -453,13 +412,13 @@ function outfitTitle(
   variant: number,
   archetype?: FashionArchetype,
 ): string {
-  const variantLabel = variant === 1 ? '' : variant === 2 ? ' (Alt)' : ' (Remix)';
+  const variantLabel = variant === 1 ? ' Signature' : variant === 2 ? ' Alternate' : ' Remix';
   const occasionLabel: Record<OccasionType, string> = {
     college: 'Campus',
     casual:  'Everyday',
     date:    'Date Night',
     party:   'Night Out',
-    formal:  'Sharp',
+    formal:  'Executive',
     sporty:  'Active',
   };
   const styleLabel: Record<StyleVibe, string> = {
@@ -470,29 +429,12 @@ function outfitTitle(
     sporty:         'Sport',
     cozy:           'Cozy',
   };
-  const archetypeLabel: Partial<Record<FashionArchetype, string>> = {
-    'old money':     'Old Money',
-    streetwear:      'Streetwear',
-    minimalist:      'Minimalist',
-    Y2K:             'Y2K',
-    'dark academia': 'Dark Academia',
-    'clean fit':     'Clean Fit',
-    techwear:        'Techwear',
-    boho:            'Boho',
-    vintage:         'Vintage',
-    luxe:            'Luxe',
-  };
-  const archetypePrefix =
-    archetype && archetypeLabel[archetype] ? `${archetypeLabel[archetype]} ` : '';
-  return `${archetypePrefix}${occasionLabel[occasion] ?? occasion} ${styleLabel[style] ?? style} Look${variantLabel}`;
+  const archetypePrefix = archetype ? `${archetype.charAt(0).toUpperCase() + archetype.slice(1)} ` : '';
+  return `${archetypePrefix}${occasionLabel[occasion] ?? occasion} ${styleLabel[style] ?? style}${variantLabel}`;
 }
 
-// ─── Recommendation Engine ────────────────────────────────────────────────────
+// ─── Recommendation Engine Class ──────────────────────────────────────────────
 class OutfitService {
-  /**
-   * Returns the effective pool of items for a given gender selection,
-   * applying the fallback to allItems if the gender-scoped pool lacks tops or bottoms.
-   */
   getEffectivePool(
     items: WardrobeItem[],
     gender?: 'all' | 'men' | 'women',
@@ -511,11 +453,6 @@ class OutfitService {
     return { pool: scopedItems, isUsingFallback: false };
   }
 
-  /**
-   * Recalculates compatibility score for an outfit using the exact same
-   * deterministic weighted scoring logic.
-   * Returns null if essential items (top and bottom) are missing.
-   */
   calculateCompatibilityScore(
     items: WardrobeItem[],
     criteria: RecommendationCriteria,
@@ -544,29 +481,27 @@ class OutfitService {
     const footwears   = pool.filter((i) => i.category === 'footwear');
     const accessories = pool.filter((i) => i.category === 'accessories');
 
-    // Build coverage warnings from real metadata before scoring
     const warnings = buildCoverageWarnings(pool, criteria);
 
     if (tops.length === 0 || bottoms.length === 0) {
       return { recommendations: [], warnings };
     }
 
-    // Include outerwear only when weather warrants it
     const needOuter = criteria.weather === 'cold' || criteria.weather === 'mild';
 
-    // Complete outfit combination: select all pieces before scoring and preserve them
     type Combo = {
       top: WardrobeItem;
       bottom: WardrobeItem;
       shoes?: WardrobeItem;
       outer?: WardrobeItem;
       score: number;
+      effectiveGender: 'men' | 'women' | 'unisex';
     };
     const combos: Combo[] = [];
 
+    // Filter candidates by gender compatibility
     for (const top of tops) {
       for (const bottom of bottoms) {
-        // Enforce gender coherence: never pair men-only top with women-only bottom or vice-versa
         if (
           top.gender &&
           bottom.gender &&
@@ -577,27 +512,36 @@ class OutfitService {
           continue;
         }
 
-        // Find the absolute best shoe for THIS (top, bottom) combination
+        const effectiveGender: 'men' | 'women' | 'unisex' =
+          top.gender && top.gender !== 'unisex'
+            ? top.gender
+            : bottom.gender && bottom.gender !== 'unisex'
+            ? bottom.gender
+            : criteria.gender && criteria.gender !== 'all'
+            ? criteria.gender
+            : 'unisex';
+
+        // Filter footwear strictly by gender
+        const validShoes = footwears.filter((s) => {
+          if (effectiveGender !== 'unisex' && s.gender && s.gender !== 'unisex' && s.gender !== effectiveGender) {
+            return false;
+          }
+          return true;
+        });
+
+        // Best shoe ranking for this top + bottom
         let bestShoe: WardrobeItem | undefined = undefined;
         let bestShoeScore = -1;
 
-        for (const s of footwears) {
-          // Check gender compatibility for shoe
-          if (
-            (top.gender && top.gender !== 'unisex' && s.gender && s.gender !== 'unisex' && s.gender !== top.gender) ||
-            (bottom.gender && bottom.gender !== 'unisex' && s.gender && s.gender !== 'unisex' && s.gender !== bottom.gender)
-          ) {
-            continue;
-          }
-
+        for (const s of validShoes) {
           let sScore = 70;
-          // Sandwich rule bonus (+20 if shoe matches top color or has strong contrast with bottom)
-          if (sandwichScore(top, bottom, s) === 100) sScore += 20;
-          // Archetype synergy (+15)
-          if (criteria.archetype && s.archetype === criteria.archetype) sScore += 15;
-          // Occasion match (+10)
-          if (s.occasions.includes(criteria.occasion)) sScore += 10;
-          // Color harmony with bottom
+          // Occasion match (+20)
+          if (s.occasions.includes(criteria.occasion)) sScore += 20;
+          // Archetype synergy (+20)
+          if (criteria.archetype && s.archetype === criteria.archetype) sScore += 20;
+          // Sandwich rule (+25)
+          if (sandwichScore(top, bottom, s) === 100) sScore += 25;
+          // Color score with bottom
           sScore += (colorScore(s.color, bottom.color) - 50) * 0.2;
 
           if (sScore > bestShoeScore) {
@@ -606,87 +550,97 @@ class OutfitService {
           }
         }
 
-        // If no shoe found with gender check, fallback to first available
-        const shoes = bestShoe || (footwears.length > 0 ? footwears[0] : undefined);
+        const shoes = bestShoe || (validShoes.length > 0 ? validShoes[0] : undefined);
 
-        // Find the absolute best outerwear for this outfit (if needed)
+        // Optional Outerwear selection
         let outer: WardrobeItem | undefined = undefined;
         if (needOuter && outerwears.length > 0) {
+          const validOuter = outerwears.filter((o) => {
+            if (effectiveGender !== 'unisex' && o.gender && o.gender !== 'unisex' && o.gender !== effectiveGender) {
+              return false;
+            }
+            return true;
+          });
+
           let bestOuter: WardrobeItem | undefined = undefined;
           let bestOuterScore = -1;
-          for (const o of outerwears) {
-            if (
-              top.gender &&
-              top.gender !== 'unisex' &&
-              o.gender &&
-              o.gender !== 'unisex' &&
-              o.gender !== top.gender
-            ) {
-              continue;
-            }
-
+          for (const o of validOuter) {
             let oScore = colorScore(o.color, top.color);
-            if (criteria.archetype && o.archetype === criteria.archetype) oScore += 15;
-            if (o.occasions.includes(criteria.occasion)) oScore += 10;
-
+            if (criteria.archetype && o.archetype === criteria.archetype) oScore += 20;
+            if (o.occasions.includes(criteria.occasion)) oScore += 15;
             if (oScore > bestOuterScore) {
               bestOuterScore = oScore;
               bestOuter = o;
             }
           }
-          outer = bestOuter || outerwears[0];
+          outer = bestOuter || validOuter[0];
         }
 
-        // Score the complete outfit with the exact selected items
         const score = scoreOutfit(top, bottom, shoes, outer, criteria);
-        combos.push({ top, bottom, shoes, outer, score });
+        combos.push({ top, bottom, shoes, outer, score, effectiveGender });
       }
     }
 
-    // Sort descending by score
+    // Sort descending by highest score
     combos.sort((a, b) => b.score - a.score);
 
-    // Pick top 3 unique combos — prefer different top AND bottom per look
+    // Select top 3 distinct, high-synergy outfits
     const usedTops    = new Set<string>();
     const usedBottoms = new Set<string>();
     const best: Combo[] = [];
 
+    // Pass 1: Strict unique top and bottom
     for (const combo of combos) {
       if (best.length >= 3) break;
-      if (best.length === 0) {
-        best.push(combo);
-        usedTops.add(combo.top.id);
-        usedBottoms.add(combo.bottom.id);
-        continue;
-      }
-      // Allow if at least one of top/bottom hasn't been used
-      if (!usedTops.has(combo.top.id) || !usedBottoms.has(combo.bottom.id)) {
+      if (!usedTops.has(combo.top.id) && !usedBottoms.has(combo.bottom.id)) {
         best.push(combo);
         usedTops.add(combo.top.id);
         usedBottoms.add(combo.bottom.id);
       }
     }
 
-    // Fallback: relax deduplication if strict pass didn't produce 3 results
+    // Pass 2: Relax if needed to always return 3 recommendations
     if (best.length < 3 && combos.length >= 3) {
       for (const combo of combos) {
         if (best.length >= 3) break;
-        if (!best.find((b) => b.top.id === combo.top.id && b.bottom.id === combo.bottom.id)) {
+        if (!best.some((b) => b.top.id === combo.top.id && b.bottom.id === combo.bottom.id)) {
           best.push(combo);
         }
       }
     }
 
-    const recommendations: OutfitRecommendation[] = best.map((combo, idx) => {
-      // Find matching accessory based on archetype and aesthetic vibe
-      const acc =
-        accessories.find((a) => {
-          if (criteria.archetype && a.archetype === criteria.archetype) return true;
-          if (combo.top.archetype && a.archetype === combo.top.archetype) return true;
-          return false;
-        }) || (accessories.length > 0 ? accessories[idx % accessories.length] : undefined);
+    // Rotate accessories across the 3 looks
+    const usedAccessories = new Set<string>();
 
-      // Preserve the exact items used to calculate this combination's compatibility score
+    const recommendations: OutfitRecommendation[] = best.map((combo, idx) => {
+      // Find matching accessory strictly obeying gender & aesthetic synergy
+      const validAccessories = accessories.filter((a) => {
+        if (combo.effectiveGender !== 'unisex' && a.gender && a.gender !== 'unisex' && a.gender !== combo.effectiveGender) {
+          return false;
+        }
+        return true;
+      });
+
+      // Prefer unused accessory matching archetype
+      let acc = validAccessories.find((a) => {
+        if (usedAccessories.has(a.id)) return false;
+        return a.archetype === criteria.archetype || a.archetype === combo.top.archetype;
+      });
+
+      // Fallback to any unused valid accessory
+      if (!acc) {
+        acc = validAccessories.find((a) => !usedAccessories.has(a.id));
+      }
+
+      // Last resort fallback
+      if (!acc && validAccessories.length > 0) {
+        acc = validAccessories[idx % validAccessories.length];
+      }
+
+      if (acc) {
+        usedAccessories.add(acc.id);
+      }
+
       const items = [combo.top, combo.bottom, combo.outer, combo.shoes, acc].filter(
         Boolean,
       ) as WardrobeItem[];
@@ -697,8 +651,7 @@ class OutfitService {
         occasion: criteria.occasion,
         style: criteria.style,
         archetype: criteria.archetype,
-        gender:
-          criteria.gender && criteria.gender !== 'all' ? criteria.gender : undefined,
+        gender: criteria.gender && criteria.gender !== 'all' ? criteria.gender : combo.effectiveGender,
         items,
         compatibilityScore: combo.score,
         reasoning: buildReasoning(
@@ -718,7 +671,7 @@ class OutfitService {
     return { recommendations, warnings };
   }
 
-  // ─── History ───────────────────────────────────────────────────────────────
+  // ─── History Methods ────────────────────────────────────────────────────────
   getHistory(): HistoryEntry[] {
     try {
       const stored = localStorage.getItem(OUTFIT_HISTORY_KEY);
@@ -748,7 +701,7 @@ class OutfitService {
         dateWorn: '2026-10-08',
         occasion: 'casual',
         items: [],
-        notes: 'Layered the sage overshirt. Got a few compliments on the color combination.',
+        notes: 'Layered the sage overshirt. Got compliments on the color combination.',
       },
       {
         id: 'hist-demo-3',
@@ -757,16 +710,16 @@ class OutfitService {
         dateWorn: '2026-10-02',
         occasion: 'date',
         items: [],
-        notes: 'Leather jacket + charcoal trousers. Classic dark look that never fails.',
+        notes: 'Classic dark look that never fails.',
       },
       {
         id: 'hist-demo-4',
         outfitId: 'demo-4',
-        title: 'Casual Friday Errand Day',
+        title: 'Casual Errand Day',
         dateWorn: '2026-09-28',
         occasion: 'casual',
         items: [],
-        notes: 'The hoodie + jeans combo again — noticed I keep falling back to this.',
+        notes: 'Streetwear wide leg denim break over retro court sneakers.',
       },
     ];
   }
@@ -798,7 +751,7 @@ class OutfitService {
       try {
         await wardrobeService.recordWear(item.id, today);
       } catch {
-        // item might be demo-only, skip silently
+        // skip if demo item
       }
     }
 
@@ -817,7 +770,7 @@ class OutfitService {
 
   saveOutfit(outfit: OutfitRecommendation): void {
     const current = this.getSavedOutfits();
-    if (current.find((o) => o.id === outfit.id)) return; // Already saved
+    if (current.find((o) => o.id === outfit.id)) return;
     localStorage.setItem(
       SAVED_OUTFITS_KEY,
       JSON.stringify([outfit, ...current]),
